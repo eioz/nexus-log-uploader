@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="imgui">
+      <UniqueIdentifier>{38cd48e1-e620-46dd-aa0b-038743ba08ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager">
+      <UniqueIdentifier>{dd353801-8a55-4c70-b426-5c920246d662}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager\ui">
+      <UniqueIdentifier>{ee02d2f2-f203-40fe-a222-a4cfbcd2a15f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager\uploaders">
+      <UniqueIdentifier>{6b0f67fc-4d51-43d3-b62b-1e39f28856f9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager\parser">
+      <UniqueIdentifier>{ec0624fd-df9b-42ee-aff8-5b9bd5ea8ddc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager\directory monitor">
+      <UniqueIdentifier>{1a7b8406-5203-496c-9ac3-462d0cee543b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="log manager\ui\windows">
+      <UniqueIdentifier>{0a2620ff-c54a-4ff8-ada7-ccfea3e59306}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\imgui\imgui.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_draw.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_tables.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\imgui\imgui_widgets.cpp">
+      <Filter>imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="ui.cpp">
+      <Filter>log manager\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="parser.cpp">
+      <Filter>log manager\parser</Filter>
+    </ClCompile>
+    <ClCompile Include="ui_elements.cpp">
+      <Filter>log manager\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="evtc_parser.cpp">
+      <Filter>log manager\directory monitor</Filter>
+    </ClCompile>
+    <ClCompile Include="directory_monitor.cpp">
+      <Filter>log manager\directory monitor</Filter>
+    </ClCompile>
+    <ClCompile Include="log_manager.cpp">
+      <Filter>log manager</Filter>
+    </ClCompile>
+    <ClCompile Include="dps_report_uploader.cpp">
+      <Filter>log manager\uploaders</Filter>
+    </ClCompile>
+    <ClCompile Include="wingman_uploader.cpp">
+      <Filter>log manager\uploaders</Filter>
+    </ClCompile>
+    <ClCompile Include="api.cpp" />
+    <ClCompile Include="log.cpp">
+      <Filter>log manager</Filter>
+    </ClCompile>
+    <ClCompile Include="logs_table.cpp">
+      <Filter>log manager\ui\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="logger.cpp">
+      <Filter>log manager</Filter>
+    </ClCompile>
+    <ClCompile Include="settings.cpp">
+      <Filter>log manager</Filter>
+    </ClCompile>
+    <ClCompile Include="elite_insights.cpp">
+      <Filter>log manager\parser</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="api.h" />
+    <ClInclude Include="ui.h">
+      <Filter>log manager\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="parser.h">
+      <Filter>log manager\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="evtc.h">
+      <Filter>log manager\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="ui_elements.h">
+      <Filter>log manager\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="evtc_parser.h">
+      <Filter>log manager\directory monitor</Filter>
+    </ClInclude>
+    <ClInclude Include="directory_monitor.h">
+      <Filter>log manager\directory monitor</Filter>
+    </ClInclude>
+    <ClInclude Include="log_manager.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+    <ClInclude Include="log.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+    <ClInclude Include="dps_report_uploader.h">
+      <Filter>log manager\uploaders</Filter>
+    </ClInclude>
+    <ClInclude Include="wingman_uploader.h">
+      <Filter>log manager\uploaders</Filter>
+    </ClInclude>
+    <ClInclude Include="uploader.h">
+      <Filter>log manager\uploaders</Filter>
+    </ClInclude>
+    <ClInclude Include="logs_table.h">
+      <Filter>log manager\ui\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="logger.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+    <ClInclude Include="settings.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+    <ClInclude Include="elite_insights.h">
+      <Filter>log manager\parser</Filter>
+    </ClInclude>
+    <ClInclude Include="module.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
