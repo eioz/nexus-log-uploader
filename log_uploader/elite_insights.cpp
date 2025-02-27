@@ -249,7 +249,7 @@ void EliteInsights::install()
 			if (installed)
 				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
 			else
-				LOG("Installing Elite Insights: " + latest_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
+				LOG("Installing Elite Insights " + latest_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
 
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 

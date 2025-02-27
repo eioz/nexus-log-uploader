@@ -98,7 +98,7 @@ void WingmanUploader::run()
 
 		WingmanUpload upload;
 
-		try 
+		try
 		{
 			upload = this->upload(log_data);
 			LOG("Wingman upload successful: " + id, ELogLevel::ELogLevel_INFO);
@@ -134,16 +134,44 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 
 	// check upload
 	{
-		auto filesize = std::filesystem::file_size(log_data.evtc_file_path);
-		auto ftime = std::filesystem::last_write_time(log_data.evtc_file_path);
-		auto cftime = std::chrono::system_clock::to_time_t(std::chrono::clock_cast<std::chrono::system_clock>(ftime));
+		auto get_file_creation_time = [](std::filesystem::path file_path) // this should get the same result as the elite insights wingman uploader
+			{
+				WIN32_FILE_ATTRIBUTE_DATA file_info;
+
+				if (!GetFileAttributesExW(file_path.wstring().c_str(), GetFileExInfoStandard, &file_info))
+					throw std::runtime_error("Unable to get file attributes for " + file_path.string());
+
+				FILETIME file_time = file_info.ftCreationTime;
+				SYSTEMTIME system_time;
+				SYSTEMTIME system_time_utc;
+
+				FileTimeToSystemTime(&file_time, &system_time_utc);
+
+				SystemTimeToTzSpecificLocalTime(NULL, &system_time_utc, &system_time);
+
+				FILETIME local_file_time;
+				SystemTimeToFileTime(&system_time, &local_file_time);
+
+				ULARGE_INTEGER ull;
+				ull.LowPart = local_file_time.dwLowDateTime;
+				ull.HighPart = local_file_time.dwHighDateTime;
+
+				constexpr uint64_t WINDOWS_TICK = 10000000ULL;
+				constexpr uint64_t EPOCH_DIFFERENCE = 11644473600ULL;
+
+				return (ull.QuadPart / WINDOWS_TICK) - EPOCH_DIFFERENCE;
+			};
+
+		auto file_size = std::filesystem::file_size(log_data.evtc_file_path);
+		auto file_creation_time = get_file_creation_time(log_data.evtc_file_path);
 
 		cpr::Multipart multipart =
 		{
 			{ "file", log_data.evtc_file_path.filename().string() },
-			{ "timestamp", std::to_string(cftime) },
-			{ "filesize", std::to_string(filesize) },
-			{ "account", log_data.parser_data.encounter.account_name }
+			{ "timestamp", std::to_string(file_creation_time) },
+			{ "filesize", std::to_string(file_size) },
+			{ "account", log_data.parser_data.encounter.account_name },
+			{ "triggerID", std::to_string(static_cast<int>(log_data.trigger_id))}
 		};
 
 		auto response = cpr::Post(cpr::Url(CHECK_UPLOAD_URL), CPR_PARAMETERS, multipart);
@@ -171,7 +199,7 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 		{
 			{ "file", cpr::File(log_data.evtc_file_path.string(), log_data.evtc_file_path.filename().string())},
 			{ "jsonfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
-			{ "htmlfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
+			{ "htmlfile", cpr::File(log_data.parser_data.html_file_path.string(), log_data.parser_data.html_file_path.filename().string()) },
 			{ "account", log_data.parser_data.encounter.account_name }
 		};
 
