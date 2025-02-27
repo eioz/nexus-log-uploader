@@ -90,7 +90,7 @@ AddonDefinition addon_definition;
 #define V_MAJOR 1
 #define V_MINOR 0
 #define V_BUILD 0
-#define V_REVISION 0
+#define V_REVISION 1
 
 extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
 {
