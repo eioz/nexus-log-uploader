@@ -9,6 +9,7 @@
 
 #define HOTKEY_UI "Open Log Uploader"
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
+#define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
@@ -45,7 +46,8 @@ void load(AddonAPI* addon_api)
 		return;
 
 	addon::api->InputBinds.RegisterWithString(HOTKEY_UI, [](const char* key, bool is_released) { if (strcmp(key, HOTKEY_UI) == 0 && !is_released) addon::ui->logs_table.toggle_visibility(); }, "CTRL+L");
-	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, "ICON_LOG", "ICON_LOG", HOTKEY_UI, "Log Uploader"); // bugged?
+	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
+	addon::api->Textures.LoadFromURL(QUICK_ACCESS_TEXTURE, "https://raw.githubusercontent.com", "RaidcoreGG/Nexus/refs/heads/main/src/Resources/icons/log.png", nullptr);
 
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))
@@ -90,7 +92,7 @@ AddonDefinition addon_definition;
 #define V_MAJOR 1
 #define V_MINOR 0
 #define V_BUILD 0
-#define V_REVISION 1
+#define V_REVISION 2
 
 extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
 {

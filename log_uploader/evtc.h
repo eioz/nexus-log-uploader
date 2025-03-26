@@ -49,6 +49,7 @@ enum class TriggerID : uint16_t
 	QadimThePeerless = 22000,
 	// Mount Balrior
 	DecimaTheStormsinger = 26774,
+	GodsquallDecima = 26867,
 	GreerTheBlightbringer = 26725,
 	UraTheSteamshrieker = 26712,
 
@@ -153,6 +154,7 @@ inline const std::map<TriggerID, std::string> EncounterNames =
 	{TriggerID::QadimThePeerless, "Qadim the Peerless"},
 	// Mount Balrior
 	{TriggerID::DecimaTheStormsinger, "Decima, the Stormsinger"},
+	{TriggerID::GodsquallDecima, "Godsquall Decima"},
 	{TriggerID::GreerTheBlightbringer, "Greer, the Blightbringer"},
 	{TriggerID::UraTheSteamshrieker, "Ura, the Steamshrieker"},
 
@@ -225,7 +227,7 @@ inline const std::vector<std::pair<std::string, std::vector<std::pair<std::strin
 		{"Hall of Chains", {TriggerID::SoullessHorror, TriggerID::RiverOfSouls, TriggerID::StatueOfIce, TriggerID::StatueOfDarkness, TriggerID::StatueOfDeath, TriggerID::Dhuum}},
 		{"Mythwright Gambit", {TriggerID::ConjuredAmalgamate, TriggerID::TwinLargos, TriggerID::Qadim}},
 		{"The Key of Ahdashim", {TriggerID::CardinalAdina, TriggerID::CardinalSabir, TriggerID::QadimThePeerless}},
-		{"Mount Balrior", {TriggerID::DecimaTheStormsinger, TriggerID::GreerTheBlightbringer, TriggerID::UraTheSteamshrieker}},
+		{"Mount Balrior", {TriggerID::GreerTheBlightbringer, TriggerID::DecimaTheStormsinger, TriggerID::GodsquallDecima, TriggerID::UraTheSteamshrieker }},
 	}},
 	{"Fractals", {
 		{"Nightmare", {TriggerID::MAMA, TriggerID::SiaxTheCorrupted, TriggerID::EnsolyssOfTheEndlessTorment}},
