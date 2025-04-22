@@ -359,7 +359,10 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 	}
 	else
 	{
-		throw std::runtime_error("Failed to get latest version");
+		LOG("Failed to determine latest Elite Insights version", ELogLevel::ELogLevel_WARNING);
+
+		if (!installed)
+			throw std::runtime_error("Elite Insights is not installed!");
 	}
 }
 

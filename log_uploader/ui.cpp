@@ -141,8 +141,6 @@ void UI::draw_dps_report_options(SettingsData& settings)
 {
 	ImGui::ID id("DPS Report Settings");
 
-	ImGui::Columns(2, "DPS Report Settings", true);
-
 	UI_CHECKBOX_T("Auto upload", dps_report.auto_upload, "Automatically upload new logs based on selected encounters and filter options");
 
 	UI_COMBO("Auto upload result filter", dps_report.auto_upload_filter, "None\0Successful only\0");
@@ -173,27 +171,25 @@ void UI::draw_dps_report_options(SettingsData& settings)
 	UI_CHECKBOX_T("Anonymize", dps_report.anonymize, "Player names will be anonymized.");
 	UI_CHECKBOX_T("Detailed WvW", dps_report.detailed_wvw, "Enable detailed WvW reports.");
 
-	ImGui::NextColumn();
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	UI_OPTION(ImGui::EncounterSelector, "Auto Upload Encounter Selection", dps_report.auto_upload_encounters);
-
-	ImGui::Columns(1);
 }
 
 void UI::draw_wingman_options(SettingsData& settings)
 {
 	ImGui::ID id("Wingman Settings");
 
-	ImGui::Columns(2, "Wingman Settings", true);
-
 	UI_CHECKBOX_T("Auto upload", wingman.auto_upload, "Automatically upload new logs based on selected encounters and filter options");
 	UI_COMBO("Auto upload result filter", wingman.auto_upload_filter, "None\0Successful only\0");
 
-	ImGui::NextColumn();
+	ImGui::Spacing();
+	ImGui::Separator();
+	ImGui::Spacing();
 
 	UI_OPTION(ImGui::EncounterSelector, "Auto Upload Encounter Selection", wingman.auto_upload_encounters);
-
-	ImGui::Columns(1);
 }
 
 void UI::draw_parser_options(SettingsData& settings)
