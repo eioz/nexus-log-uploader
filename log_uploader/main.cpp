@@ -11,6 +11,12 @@
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
 #define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
 
+void on_texture_loaded(const char* identifier, Texture* texture)
+{
+	if (texture == nullptr) return;
+	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
+}
+
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
@@ -46,8 +52,7 @@ void load(AddonAPI* addon_api)
 		return;
 
 	addon::api->InputBinds.RegisterWithString(HOTKEY_UI, [](const char* key, bool is_released) { if (strcmp(key, HOTKEY_UI) == 0 && !is_released) addon::ui->logs_table.toggle_visibility(); }, "CTRL+L");
-	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
-	addon::api->Textures.LoadFromURL(QUICK_ACCESS_TEXTURE, "https://raw.githubusercontent.com", "RaidcoreGG/Nexus/refs/heads/main/src/Resources/icons/log.png", nullptr);
+	addon::api->Textures.LoadFromURL(QUICK_ACCESS_TEXTURE, "https://raw.githubusercontent.com", "RaidcoreGG/Nexus/refs/heads/main/src/Resources/icons/log.png", on_texture_loaded);
 
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))
