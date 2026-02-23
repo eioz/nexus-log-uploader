@@ -37,12 +37,15 @@ bool initialized = false;
 
 void load(AddonAPI* addon_api)
 {
+	if (addon_api == nullptr)
+		return;
+
 	addon::api = addon_api;
 	addon::mumble = static_cast<Mumble::Data*>(addon::api->DataLink.Get("DL_MUMBLE_LINK"));
 	addon::nexus = static_cast<NexusLinkData*>(addon::api->DataLink.Get("DL_NEXUS_LINK"));
 	addon::directory = std::filesystem::path(addon::api->Paths.GetAddonDirectory(ADDON_DIRECTORY));
 
-	if (addon::api == nullptr || addon::mumble == nullptr || addon::nexus == nullptr || addon::directory.empty())
+	if (addon::mumble == nullptr || addon::nexus == nullptr || addon::directory.empty())
 		return;
 
 	addon::api->InputBinds.RegisterWithString(HOTKEY_UI, [](const char* key, bool is_released) { if (strcmp(key, HOTKEY_UI) == 0 && !is_released) addon::ui->logs_table.toggle_visibility(); }, "CTRL+L");

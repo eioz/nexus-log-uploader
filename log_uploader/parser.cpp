@@ -50,8 +50,6 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 void Parser::run()
 {
-	std::unique_lock parser_lock(parser_mutex);
-
 	LOG("Starting parser", ELogLevel_DEBUG);
 
 	try
@@ -66,12 +64,11 @@ void Parser::run()
 
 	while (true)
 	{
-		parser_cv.wait(parser_lock, [this] { return !loaded.load() || !parser_queue.empty(); });
+		std::unique_lock parser_queue_lock(parser_queue_mutex);
+		parser_cv.wait(parser_queue_lock, [this] { return !loaded.load() || !parser_queue.empty(); });
 
 		if (!loaded.load())
 			break;
-
-		std::unique_lock parser_queue_lock(parser_queue_mutex);
 
 		auto log = parser_queue.front();
 		parser_queue.pop();

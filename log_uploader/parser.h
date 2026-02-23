@@ -18,7 +18,6 @@ public:
 	void add_log(std::shared_ptr<Log> log);
 
 private:
-	std::mutex parser_mutex;
 	std::condition_variable_any parser_cv;
 	std::mutex parser_queue_mutex;
 	std::queue<std::shared_ptr<Log>> parser_queue;

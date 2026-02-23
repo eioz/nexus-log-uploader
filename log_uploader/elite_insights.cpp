@@ -148,7 +148,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 			if (json.contains("isLegendaryCM"))
 				lcm = json.at("isLegendaryCM").get<bool>();
 
-			data.encounter.difficulty = cm ? EncounterDifficulty::CHALLENGE_MODE : lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
+			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
 
 			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point
 				{
@@ -254,7 +254,7 @@ void EliteInsights::install()
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
 			if (download.status_code != 200)
-				throw std::runtime_error("Invalid HTTP status code: " + download.status_code == 0 ? "timeout" : std::to_string(download.status_code));
+				throw std::runtime_error("Invalid HTTP status code: " + (download.status_code == 0 ? std::string("timeout") : std::to_string(download.status_code)));
 
 			mz_zip_archive zip_archive{};
 			mz_zip_zero_struct(&zip_archive);

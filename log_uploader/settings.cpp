@@ -51,8 +51,6 @@ bool Settings::load()
 		LOG("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), ELogLevel::ELogLevel_WARNING);
 		return false;
 	}
-
-	return false;
 }
 
 bool Settings::save()
@@ -80,8 +78,6 @@ bool Settings::save()
 		LOG("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), ELogLevel::ELogLevel_WARNING);
 		return false;
 	}
-
-	return false;
 }
 
 void SettingsData::verify()
