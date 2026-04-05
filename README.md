@@ -1,13 +1,22 @@
 # Nexus Log Uploader
 
-Automatically parse new logs locally and upload them to dps.report or Wingman.
+[Nexus](https://github.com/RaidcoreGG/Nexus) addon to automatically parse new arcdps logs locally and optionally upload them to [dps.report](https://dps.report) or [Wingman](https://gw2wingman.nevermindcreations.de).
 
-Requires [Nexus](https://github.com/RaidcoreGG/Nexus).
-
-# Screenshots
+## Screenshots
 
 ![context-menu](screenshots/context-menu.png)
 ![display-options](screenshots/display-options.png)
 ![parser-options](screenshots/parser-options.png)
 ![dps-report-options](screenshots/dps-report-options.png)
-![wingman-options](screenshots/wingman-options.png)
+![wingman-options](screenshots/wingman-options.png)W
+
+## Building
+
+```powershell
+.\build.ps1                # Release x64
+.\build.ps1 -Config Debug  # Debug x64
+.\build.ps1 -Rebuild       # Clean + rebuild
+.\build.ps1 -Clean         # Remove build artifacts
+```
+
+Output: `build\x64\Release\log_uploader.dll`

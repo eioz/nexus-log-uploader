@@ -1,0 +1,44 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Cache vcpkg packages
+        uses: actions/cache@v4
+        with:
+          path: vcpkg_installed
+          key: vcpkg-x64-windows-static-${{ hashFiles('vcpkg.json') }}
+          restore-keys: |
+            vcpkg-x64-windows-static-
+
+      - name: Install dependencies
+        run: |
+          $vcpkg = $env:VCPKG_INSTALLATION_ROOT
+          & "$vcpkg\vcpkg.exe" install --triplet x64-windows-static
+          & "$vcpkg\vcpkg.exe" integrate install
+
+      - name: Build
+        run: .\build.ps1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexus-log-uploader
+          path: build\x64\Release\log_uploader.dll

@@ -1,0 +1,68 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build Release x64",
+      "type": "shell",
+      "command": ".\\build.ps1",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build Debug x64",
+      "type": "shell",
+      "command": ".\\build.ps1 -Config Debug",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Rebuild Release x64",
+      "type": "shell",
+      "command": ".\\build.ps1 -Rebuild",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Clean x64",
+      "type": "shell",
+      "command": ".\\build.ps1 -Clean",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Debug Mock",
+      "type": "shell",
+      "command": ".\\build.ps1 -Config Debug -Mock",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

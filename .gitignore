@@ -1,4 +1,6 @@
 .vs
-.local
 build
-*/build
+*.pdb
+*.vcxproj.user
+vcpkg_installed/
+imgui.ini

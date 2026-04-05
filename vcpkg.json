@@ -1,0 +1,9 @@
+{
+  "name": "nexus-log-uploader",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "cpr",
+    "nlohmann-json",
+    "miniz"
+  ]
+}
