@@ -1,53 +1,53 @@
 #include "api.h"
 #include "directory_monitor.h"
-#include "ui.h"
-#include "settings.h"
-#include "parser.h"
 #include "dps_report_uploader.h"
-#include "wingman_uploader.h"
 #include "log_manager.h"
+#include "parser.h"
+#include "resource.h"
+#include "settings.h"
+#include "ui.h"
+#include "wingman_uploader.h"
 
 #define HOTKEY_UI "Open Log Uploader"
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
 #define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
+static HMODULE g_module = nullptr;
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH: break;
-	case DLL_PROCESS_DETACH: break;
-	case DLL_THREAD_ATTACH: break;
-	case DLL_THREAD_DETACH: break;
-	}
+	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
+		g_module = hModule;
 	return TRUE;
 }
 
-void render()
-{
-	addon::ui->render_windows();
-}
+void render() { addon::ui->render_windows(); }
 
-void render_options()
-{
-	addon::ui->render_options();
-}
-
-bool initialized = false;
+void render_options() { addon::ui->render_options(); }
 
 void load(AddonAPI* addon_api)
 {
 	addon::api = addon_api;
+
+	if (addon::api == nullptr)
+		return;
+
 	addon::mumble = static_cast<Mumble::Data*>(addon::api->DataLink.Get("DL_MUMBLE_LINK"));
 	addon::nexus = static_cast<NexusLinkData*>(addon::api->DataLink.Get("DL_NEXUS_LINK"));
 	addon::directory = std::filesystem::path(addon::api->Paths.GetAddonDirectory(ADDON_DIRECTORY));
 
-	if (addon::api == nullptr || addon::mumble == nullptr || addon::nexus == nullptr || addon::directory.empty())
+	if (addon::mumble == nullptr || addon::nexus == nullptr || addon::directory.empty())
 		return;
 
-	addon::api->InputBinds.RegisterWithString(HOTKEY_UI, [](const char* key, bool is_released) { if (strcmp(key, HOTKEY_UI) == 0 && !is_released) addon::ui->logs_table.toggle_visibility(); }, "CTRL+L");
+	addon::api->InputBinds.RegisterWithString(
+	    HOTKEY_UI,
+	    [](const char* key, bool is_released) {
+		    if (strcmp(key, HOTKEY_UI) == 0 && !is_released)
+			    addon::ui->logs_table.toggle_visibility();
+	    },
+	    "CTRL+L");
 	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
-	addon::api->Textures.LoadFromURL(QUICK_ACCESS_TEXTURE, "https://raw.githubusercontent.com", "RaidcoreGG/Nexus/refs/heads/main/src/Resources/icons/log.png", nullptr);
+	addon::api->Textures.LoadFromResource(QUICK_ACCESS_TEXTURE, IDR_LOG_ICON, g_module, nullptr);
 
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))
@@ -57,7 +57,7 @@ void load(AddonAPI* addon_api)
 		}
 
 	ImGui::SetCurrentContext((ImGuiContext*)addon::api->ImguiContext);
-	ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))addon::api->ImguiMalloc, (void(*)(void*, void*))addon::api->ImguiFree);
+	ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))addon::api->ImguiMalloc, (void (*)(void*, void*))addon::api->ImguiFree);
 
 	addon::settings->initialize();
 

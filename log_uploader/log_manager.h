@@ -18,7 +18,6 @@ public:
 	std::shared_mutex logs_mutex;
 
 private:
-
 };
 
 DECLARE_MODULE(LogManager, log_manager)

@@ -12,7 +12,6 @@ private:
 	void run() override;
 
 	DpsReportUpload upload(std::filesystem::path evtc_file_path);
-
 };
 
 DECLARE_MODULE(DPSReportUploader, dps_report_uploader)

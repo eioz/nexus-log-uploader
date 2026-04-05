@@ -1,47 +1,37 @@
 #include "ui.h"
-#include "ui_elements.h"
 #include "api.h"
 #include "log_manager.h"
+#include "ui_elements.h"
 
 IMPLEMENT_MODULE(UI, ui)
 
-#define SAVE_SETTING(Setting) \
-addon::settings->write([this, &settings](auto& _settings) \
-{ \
-	_settings.Setting = settings.Setting; \
-});
+#define SAVE_SETTING(Setting) addon::settings->write([this, &settings](auto& _settings) { _settings.Setting = settings.Setting; });
 
-#define UI_OPTION(ImGuiFunction, Label, Setting) \
-if (ImGuiFunction(Label, &(settings.Setting))) \
-{ \
-	SAVE_SETTING(Setting); \
-}
+#define UI_OPTION(ImGuiFunction, Label, Setting)   \
+	if (ImGuiFunction(Label, &(settings.Setting))) \
+	{                                              \
+		SAVE_SETTING(Setting);                     \
+	}
 
-#define UI_CHECKBOX(Label, Setting) \
-if (ImGui::Checkbox(Label, &(settings.Setting))) \
-{ \
-	SAVE_SETTING(Setting); \
-}
+#define UI_CHECKBOX(Label, Setting)                  \
+	if (ImGui::Checkbox(Label, &(settings.Setting))) \
+	{                                                \
+		SAVE_SETTING(Setting);                       \
+	}
 
 #define UI_CHECKBOX_T(Label, Setting, TooltipText) \
-UI_CHECKBOX(Label, Setting); \
-ImGui::HoverTooltip(TooltipText);
+	UI_CHECKBOX(Label, Setting);                   \
+	ImGui::HoverTooltip(TooltipText);
 
-#define UI_COMBO(Label, Setting, Items) \
-if(ImGui::Combo(Label, reinterpret_cast<int*>(&(settings.Setting)), Items)) \
-{ \
-	SAVE_SETTING(Setting); \
-}
+#define UI_COMBO(Label, Setting, Items)                                          \
+	if (ImGui::Combo(Label, reinterpret_cast<int*>(&(settings.Setting)), Items)) \
+	{                                                                            \
+		SAVE_SETTING(Setting);                                                   \
+	}
 
-void UI::initialize()
-{
+void UI::initialize() {}
 
-}
-
-void UI::render_windows()
-{
-	logs_table.render();
-}
+void UI::render_windows() { logs_table.render(); }
 
 void UI::render_options()
 {
@@ -81,12 +71,28 @@ void UI::render_context_menu()
 {
 	auto settings = addon::settings->read([this](auto& settings) { return settings; });
 
-	if (ImGui::BeginMenu("Display")) { draw_display_options(settings); ImGui::EndMenu(); }
-	if (ImGui::BeginMenu("Parser")) { draw_parser_options(settings); ImGui::EndMenu(); }
-	ImGui::SetNextWindowSize(ImVec2(800, 0)); // ???
-	if (ImGui::BeginMenu("dps.report")) { draw_dps_report_options(settings); ImGui::EndMenu(); }
+	if (ImGui::BeginMenu("Display"))
+	{
+		draw_display_options(settings);
+		ImGui::EndMenu();
+	}
+	if (ImGui::BeginMenu("Parser"))
+	{
+		draw_parser_options(settings);
+		ImGui::EndMenu();
+	}
 	ImGui::SetNextWindowSize(ImVec2(800, 0));
-	if (ImGui::BeginMenu("Wingman")) { draw_wingman_options(settings); ImGui::EndMenu(); }
+	if (ImGui::BeginMenu("dps.report"))
+	{
+		draw_dps_report_options(settings);
+		ImGui::EndMenu();
+	}
+	ImGui::SetNextWindowSize(ImVec2(800, 0));
+	if (ImGui::BeginMenu("Wingman"))
+	{
+		draw_wingman_options(settings);
+		ImGui::EndMenu();
+	}
 }
 
 void UI::draw_display_options(SettingsData& settings)

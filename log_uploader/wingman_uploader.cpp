@@ -1,12 +1,13 @@
-#include "settings.h"
 #include "wingman_uploader.h"
 #include "logger.h"
+#include "settings.h"
 
 #include <cpr/cpr.h>
 
 IMPLEMENT_MODULE(WingmanUploader, wingman_uploader)
 
-#define CPR_PARAMETERS cpr::Timeout{ std::chrono::seconds(180) }
+#define CPR_PARAMETERS \
+	cpr::Timeout { std::chrono::seconds(180) }
 #define TEST_CONNECTION_URL "https://gw2wingman.nevermindcreations.de/testConnection"
 #define CHECK_UPLOAD_URL "https://gw2wingman.nevermindcreations.de/checkUpload"
 #define UPLOAD_PROCESSED_URL "https://gw2wingman.nevermindcreations.de/uploadProcessed"
@@ -60,9 +61,7 @@ void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void WingmanUploader::run()
 {
-	std::unique_lock upload_lock(upload_mutex);
-
-	LOG("Starting Wingman uploader", ELogLevel_DEBUG);
+	LOG("Starting Wingman uploader", ELogLevel::ELogLevel_DEBUG);
 
 	while (true)
 	{
@@ -116,7 +115,7 @@ void WingmanUploader::run()
 		log->update_view();
 	}
 
-	LOG("Wingman uploader stopped", ELogLevel_DEBUG);
+	LOG("Wingman uploader stopped", ELogLevel::ELogLevel_DEBUG);
 }
 
 WingmanUpload WingmanUploader::upload(LogData& log_data)
@@ -135,44 +134,38 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 	// check upload
 	{
 		auto get_file_creation_time = [](std::filesystem::path file_path) // this should get the same result as the elite insights wingman uploader
-			{
-				WIN32_FILE_ATTRIBUTE_DATA file_info;
+		{
+			WIN32_FILE_ATTRIBUTE_DATA file_info;
 
-				if (!GetFileAttributesExW(file_path.wstring().c_str(), GetFileExInfoStandard, &file_info))
-					throw std::runtime_error("Unable to get file attributes for " + file_path.string());
+			if (!GetFileAttributesExW(file_path.wstring().c_str(), GetFileExInfoStandard, &file_info))
+				throw std::runtime_error("Unable to get file attributes for " + file_path.string());
 
-				FILETIME file_time = file_info.ftCreationTime;
-				SYSTEMTIME system_time;
-				SYSTEMTIME system_time_utc;
+			FILETIME file_time = file_info.ftCreationTime;
+			SYSTEMTIME system_time;
+			SYSTEMTIME system_time_utc;
 
-				FileTimeToSystemTime(&file_time, &system_time_utc);
+			FileTimeToSystemTime(&file_time, &system_time_utc);
 
-				SystemTimeToTzSpecificLocalTime(NULL, &system_time_utc, &system_time);
+			SystemTimeToTzSpecificLocalTime(NULL, &system_time_utc, &system_time);
 
-				FILETIME local_file_time;
-				SystemTimeToFileTime(&system_time, &local_file_time);
+			FILETIME local_file_time;
+			SystemTimeToFileTime(&system_time, &local_file_time);
 
-				ULARGE_INTEGER ull;
-				ull.LowPart = local_file_time.dwLowDateTime;
-				ull.HighPart = local_file_time.dwHighDateTime;
+			ULARGE_INTEGER ull;
+			ull.LowPart = local_file_time.dwLowDateTime;
+			ull.HighPart = local_file_time.dwHighDateTime;
 
-				constexpr uint64_t WINDOWS_TICK = 10000000ULL;
-				constexpr uint64_t EPOCH_DIFFERENCE = 11644473600ULL;
+			constexpr uint64_t WINDOWS_TICK = 10000000ULL;
+			constexpr uint64_t EPOCH_DIFFERENCE = 11644473600ULL;
 
-				return (ull.QuadPart / WINDOWS_TICK) - EPOCH_DIFFERENCE;
-			};
+			return (ull.QuadPart / WINDOWS_TICK) - EPOCH_DIFFERENCE;
+		};
 
 		auto file_size = std::filesystem::file_size(log_data.evtc_file_path);
 		auto file_creation_time = get_file_creation_time(log_data.evtc_file_path);
 
-		cpr::Multipart multipart =
-		{
-			{ "file", log_data.evtc_file_path.filename().string() },
-			{ "timestamp", std::to_string(file_creation_time) },
-			{ "filesize", std::to_string(file_size) },
-			{ "account", log_data.parser_data.encounter.account_name },
-			{ "triggerID", std::to_string(static_cast<int>(log_data.trigger_id))}
-		};
+		cpr::Multipart multipart = { { "file", log_data.evtc_file_path.filename().string() }, { "timestamp", std::to_string(file_creation_time) }, { "filesize", std::to_string(file_size) }, { "account", log_data.parser_data.encounter.account_name },
+			{ "triggerID", std::to_string(static_cast<int>(log_data.trigger_id)) } };
 
 		auto response = cpr::Post(cpr::Url(CHECK_UPLOAD_URL), CPR_PARAMETERS, multipart);
 
@@ -195,13 +188,8 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 
 	// upload processed
 	{
-		cpr::Multipart multipart =
-		{
-			{ "file", cpr::File(log_data.evtc_file_path.string(), log_data.evtc_file_path.filename().string())},
-			{ "jsonfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
-			{ "htmlfile", cpr::File(log_data.parser_data.html_file_path.string(), log_data.parser_data.html_file_path.filename().string()) },
-			{ "account", log_data.parser_data.encounter.account_name }
-		};
+		cpr::Multipart multipart = { { "file", cpr::File(log_data.evtc_file_path.string(), log_data.evtc_file_path.filename().string()) }, { "jsonfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
+			{ "htmlfile", cpr::File(log_data.parser_data.html_file_path.string(), log_data.parser_data.html_file_path.filename().string()) }, { "account", log_data.parser_data.encounter.account_name } };
 
 		auto response = cpr::Post(cpr::Url(UPLOAD_PROCESSED_URL), CPR_PARAMETERS, multipart);
 
@@ -223,20 +211,20 @@ bool WingmanUploader::get_server_availability()
 	static const std::chrono::seconds check_interval = std::chrono::seconds(180);
 	auto current_time = std::chrono::system_clock::now();
 
-	static auto servers_available = false;
+	static auto servers_available_cached = false;
 
-	if (!servers_available || current_time - last_check_time > check_interval)
+	if (!servers_available_cached || current_time - last_check_time > check_interval)
 	{
 		last_check_time = current_time;
 
 		auto response = cpr::Get(cpr::Url(TEST_CONNECTION_URL), CPR_PARAMETERS);
 
-		servers_available = (response.status_code == 200 && response.text == "True");
+		servers_available_cached = (response.status_code == 200 && response.text == "True");
 
-		this->servers_available.store(servers_available);
+		this->servers_available.store(servers_available_cached);
 
-		return servers_available;
+		return servers_available_cached;
 	}
 
-	return servers_available;
+	return servers_available_cached;
 }

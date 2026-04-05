@@ -1,6 +1,6 @@
+#include "logs_table.h"
 #include "api.h"
 #include "dps_report_uploader.h"
-#include "logs_table.h"
 #include "parser.h"
 #include "ui.h"
 #include "ui_elements.h"
@@ -59,17 +59,21 @@ void LogsTable::render()
 
 			if (display_settings.fixed_position && !(ImGui::IsMouseDragging(0) || ImGui::IsItemActive()))
 			{
-				auto get_aligned_position = [](WindowAlignment alignment, ImVec2& windowSize, ImVec2& screenSize) -> ImVec2
+				auto get_aligned_position = [](WindowAlignment alignment, ImVec2& windowSize, ImVec2& screenSize) -> ImVec2 {
+					switch (alignment)
 					{
-						switch (alignment)
-						{
-						case WindowAlignment::TOP_LEFT: return ImVec2(0, 0);
-						case WindowAlignment::TOP_RIGHT: return ImVec2(screenSize.x - windowSize.x, 0);
-						case WindowAlignment::BOTTOM_LEFT: return ImVec2(0, screenSize.y - windowSize.y);
-						case WindowAlignment::BOTTOM_RIGHT: return ImVec2(screenSize.x - windowSize.x, screenSize.y - windowSize.y);
-						default: return ImVec2(0, 0);
-						}
-					};
+					case WindowAlignment::TOP_LEFT:
+						return ImVec2(0, 0);
+					case WindowAlignment::TOP_RIGHT:
+						return ImVec2(screenSize.x - windowSize.x, 0);
+					case WindowAlignment::BOTTOM_LEFT:
+						return ImVec2(0, screenSize.y - windowSize.y);
+					case WindowAlignment::BOTTOM_RIGHT:
+						return ImVec2(screenSize.x - windowSize.x, screenSize.y - windowSize.y);
+					default:
+						return ImVec2(0, 0);
+					}
+				};
 
 				auto window_position = get_aligned_position(display_settings.alignment, window_size, screen_size);
 
@@ -83,10 +87,7 @@ void LogsTable::render()
 			{
 				auto window_position = ImGui::GetWindowPos();
 
-				auto target_position = ImVec2(
-					std::clamp(window_position.x, 0.0f, std::max(screen_size.x - window_size.x, 0.f)),
-					std::clamp(window_position.y, 0.0f, std::max(screen_size.y - window_size.y, 0.f))
-				);
+				auto target_position = ImVec2(std::clamp(window_position.x, 0.0f, std::max(screen_size.x - window_size.x, 0.f)), std::clamp(window_position.y, 0.0f, std::max(screen_size.y - window_size.y, 0.f)));
 
 				if (target_position != window_position)
 					ImGui::SetWindowPos(target_position);
@@ -211,7 +212,7 @@ void LogsTable::render()
 						if (ImGui::IsItemHovered())
 						{
 							entry.refresh_time_ago();
-							ImGui::SetTooltip(view.time_ago.c_str());
+							ImGui::SetTooltip("%s", view.time_ago.c_str());
 						}
 						break;
 					case Columns::NAME:
@@ -326,36 +327,36 @@ void LogsTable::draw_context_menu()
 
 				std::array<std::deque<std::reference_wrapper<LogTableEntry>>, static_cast<size_t>(LogAction::COUNT)> action_logs;
 
-				auto fill_action_logs = [&](LogTableEntry& e)
+				auto fill_action_logs = [&](LogTableEntry& e) {
+					if (e.data.parser_data.status == ParseStatus::PARSED)
 					{
-						if (e.data.parser_data.status == ParseStatus::PARSED)
-						{
-							action_logs[static_cast<size_t>(LogAction::OPEN_REPORTS)].push_back(e);
+						action_logs[static_cast<size_t>(LogAction::OPEN_REPORTS)].push_back(e);
 
-							if (e.data.wingman_upload.status == UploadStatus::AVAILABLE || e.data.wingman_upload.status == UploadStatus::FAILED)
-							{
-								action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)].push_back(e);
-							}
-						}
-						else if (e.data.parser_data.status == ParseStatus::UNPARSED)
+						if (e.data.wingman_upload.status == UploadStatus::AVAILABLE || e.data.wingman_upload.status == UploadStatus::FAILED)
 						{
-							action_logs[static_cast<size_t>(LogAction::PARSE)].push_back(e);
+							action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)].push_back(e);
 						}
+					}
+					else if (e.data.parser_data.status == ParseStatus::UNPARSED)
+					{
+						action_logs[static_cast<size_t>(LogAction::PARSE)].push_back(e);
+					}
 
-						if (e.data.dps_report_upload.status == UploadStatus::AVAILABLE || e.data.dps_report_upload.status == UploadStatus::FAILED)
-						{
-							action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_DPS_REPORT)].push_back(e);
-						}
+					if (e.data.dps_report_upload.status == UploadStatus::AVAILABLE || e.data.dps_report_upload.status == UploadStatus::FAILED)
+					{
+						action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_DPS_REPORT)].push_back(e);
+					}
 
-						if (e.data.dps_report_upload.status == UploadStatus::UPLOADED && !e.data.dps_report_upload.url.empty())
-						{
-							action_logs[static_cast<size_t>(LogAction::COPY_DPS_REPORT_URLS)].push_back(e);
-						}
-					};
+					if (e.data.dps_report_upload.status == UploadStatus::UPLOADED && !e.data.dps_report_upload.url.empty())
+					{
+						action_logs[static_cast<size_t>(LogAction::COPY_DPS_REPORT_URLS)].push_back(e);
+					}
+				};
 
 				if (is_all)
 				{
-					for (auto& e : entries) fill_action_logs(e);
+					for (auto& e : entries)
+						fill_action_logs(e);
 				}
 				else
 				{
@@ -446,8 +447,7 @@ void LogsTable::draw_context_menu()
 									}
 									else
 									{
-										ss << "[" << e.view.name << "]("
-											<< e.data.dps_report_upload.url << ")\n";
+										ss << "[" << e.view.name << "](" << e.data.dps_report_upload.url << ")\n";
 									}
 								}
 								ImGui::SetClipboardText(ss.str().c_str());
@@ -488,7 +488,6 @@ void LogsTable::draw_context_menu()
 	ImGui::EndPopup();
 }
 
-
 void LogTableEntry::update_view()
 {
 	if (data.parser_data.status == ParseStatus::PARSED)
@@ -502,20 +501,19 @@ void LogTableEntry::update_view()
 		view.name = encounter.name;
 		view.result = encounter.success ? "Success" : encounter.has_boss ? std::format("{:.2f}%", 100.f - encounter.health_percent_burned) : "Failure";
 
-		auto update_duration = [&]()
-			{
-				auto minutes = encounter.duration_ms / (60 * 1000);
-				auto seconds = (encounter.duration_ms / 1000) % 60;
-				auto milliseconds = encounter.duration_ms % 1000;
+		auto update_duration = [&]() {
+			auto minutes = encounter.duration_ms / (60 * 1000);
+			auto seconds = (encounter.duration_ms / 1000) % 60;
+			auto milliseconds = encounter.duration_ms % 1000;
 
-				std::ostringstream oss;
-				if (minutes > 0)
-					oss << std::setfill('0') << std::setw(1) << minutes << "m ";
-				oss << std::setfill('0') << std::setw(1) << seconds << "s ";
-				oss << std::setfill('0') << std::setw(1) << milliseconds << "ms";
+			std::ostringstream oss;
+			if (minutes > 0)
+				oss << std::setfill('0') << std::setw(1) << minutes << "m ";
+			oss << std::setfill('0') << std::setw(1) << seconds << "s ";
+			oss << std::setfill('0') << std::setw(1) << milliseconds << "ms";
 
-				view.duration = oss.str();
-			};
+			view.duration = oss.str();
+		};
 
 		update_duration();
 	}
@@ -537,57 +535,50 @@ void LogTableEntry::update_view()
 
 void LogTableEntry::refresh_time_ago()
 {
-	auto get_time_ago = [](const std::chrono::system_clock::time_point& timepoint)
+	auto get_time_ago = [](const std::chrono::system_clock::time_point& timepoint) {
+		auto sys_time = std::chrono::clock_cast<std::chrono::system_clock>(timepoint);
+		auto sys_time_trunc = std::chrono::floor<std::chrono::seconds>(sys_time);
+
+		std::chrono::zoned_time local_time{ std::chrono::current_zone(), sys_time_trunc };
+
+		std::string formatted_time = std::format("{:%d %B %Y, %H:%M:%S}", local_time);
+
+		// Format timestamp
+		std::ostringstream timestamp_stream;
+
+		timestamp_stream << formatted_time;
+
+		// Get the current time
+		auto now = std::chrono::system_clock::now();
+
+		// Calculate difference
+		auto diff = now - timepoint;
+
+		// Components of the difference
+		std::vector<std::pair<int64_t, std::string>> components = { { std::chrono::duration_cast<std::chrono::years>(diff).count(), "y" }, { std::chrono::duration_cast<std::chrono::months>(diff % std::chrono::years(1)).count(), "M" },
+			{ std::chrono::duration_cast<std::chrono::days>(diff % std::chrono::months(1)).count(), "d" }, { std::chrono::duration_cast<std::chrono::hours>(diff % std::chrono::days(1)).count(), "h" }, { std::chrono::duration_cast<std::chrono::minutes>(diff % std::chrono::hours(1)).count(), "m" },
+			{ std::chrono::duration_cast<std::chrono::seconds>(diff % std::chrono::minutes(1)).count(), "s" } };
+
+		// Build dynamic "X ago" string
+		std::ostringstream ago_stream;
+		bool first = true;
+		for (const auto& [value, unit] : components)
 		{
-
-			auto sys_time = std::chrono::clock_cast<std::chrono::system_clock>(timepoint);
-			auto sys_time_trunc = std::chrono::floor<std::chrono::seconds>(sys_time);
-
-			std::chrono::zoned_time local_time{ std::chrono::current_zone(), sys_time_trunc };
-
-			std::string formatted_time = std::format("{:%d %B %Y, %H:%M:%S}", local_time);
-
-			// Format timestamp
-			std::ostringstream timestamp_stream;
-
-			timestamp_stream << formatted_time;
-
-			// Get the current time
-			auto now = std::chrono::system_clock::now();
-
-			// Calculate difference
-			auto diff = now - timepoint;
-
-			// Components of the difference
-			std::vector<std::pair<int64_t, std::string>> components = {
-				{std::chrono::duration_cast<std::chrono::years>(diff).count(), "y"},
-				{std::chrono::duration_cast<std::chrono::months>(diff % std::chrono::years(1)).count(), "M"},
-				{std::chrono::duration_cast<std::chrono::days>(diff % std::chrono::months(1)).count(), "d"},
-				{std::chrono::duration_cast<std::chrono::hours>(diff % std::chrono::days(1)).count(), "h"},
-				{std::chrono::duration_cast<std::chrono::minutes>(diff % std::chrono::hours(1)).count(), "m"},
-				{std::chrono::duration_cast<std::chrono::seconds>(diff % std::chrono::minutes(1)).count(), "s"}
-			};
-
-			// Build dynamic "X ago" string
-			std::ostringstream ago_stream;
-			bool first = true;
-			for (const auto& [value, unit] : components)
+			if (value > 0)
 			{
-				if (value > 0)
-				{
-					ago_stream << value << unit + " ";
-					first = false;
-				}
+				ago_stream << value << unit + " ";
+				first = false;
 			}
+		}
 
-			if (first)
-				ago_stream << "now";
-			else
-				ago_stream << "ago";
+		if (first)
+			ago_stream << "now";
+		else
+			ago_stream << "ago";
 
-			// Combine and return the result
-			return timestamp_stream.str() + " (" + ago_stream.str() + ")";
-		};
+		// Combine and return the result
+		return timestamp_stream.str() + " (" + ago_stream.str() + ")";
+	};
 
 	view.time_ago = get_time_ago(data.parser_data.status != ParseStatus::PARSED ? data.evtc_file_time : data.parser_data.encounter.end_time);
 }

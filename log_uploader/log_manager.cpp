@@ -1,11 +1,11 @@
 #include "log_manager.h"
-#include "evtc_parser.h"
-#include "ui.h"
-#include "parser.h"
 #include "api.h"
 #include "dps_report_uploader.h"
-#include "wingman_uploader.h"
+#include "evtc_parser.h"
 #include "logger.h"
+#include "parser.h"
+#include "ui.h"
+#include "wingman_uploader.h"
 
 #include <fstream>
 
@@ -17,7 +17,7 @@ LogManager::~LogManager()
 
 	for (auto& log : logs)
 	{
-		std::unique_lock lock(log->mutex);
+		std::unique_lock log_lock(log->mutex);
 
 		if (log->parser_data.status == ParseStatus::PARSED)
 		{

@@ -1,24 +1,20 @@
 #pragma once
 
-#include "module.h"
 #include "evtc.h"
+#include "module.h"
 
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
 #include <shared_mutex>
 
-inline void to_json(nlohmann::json& j, const ImVec2& v)
-{
-	j = nlohmann::json{ {"x", v.x}, {"y", v.y} };
-};
+inline void to_json(nlohmann::json& j, const ImVec2& v) { j = nlohmann::json{ { "x", v.x }, { "y", v.y } }; }
 
 inline void from_json(const nlohmann::json& j, ImVec2& v)
 {
 	j.at("x").get_to(v.x);
 	j.at("y").get_to(v.y);
-};
-
+}
 
 enum class ParserUpdateChannel
 {
@@ -101,7 +97,7 @@ struct SettingsData
 
 			bool title_bar = true;
 			bool background = true;
-			
+
 			bool parser_column = true;
 			bool dps_report_column = true;
 			bool wingman_column = true;
@@ -124,21 +120,19 @@ class Settings
 {
 public:
 	void initialize();
-	auto release() -> void
+	void release()
 	{
 		std::lock_guard lock(mutex);
 		save();
 	}
 
-	template<typename Func>
-	auto read(Func&& func) const -> decltype(func(std::declval<const SettingsData&>()))
+	template <typename Func> auto read(Func&& func) const -> decltype(func(std::declval<const SettingsData&>()))
 	{
 		std::shared_lock lock(mutex);
 		return func(data);
 	}
 
-	template<typename Func>
-	auto write(Func&& func) -> decltype(func(std::declval<SettingsData&>()))
+	template <typename Func> auto write(Func&& func) -> decltype(func(std::declval<SettingsData&>()))
 	{
 		std::unique_lock lock(mutex);
 		return func(data);
@@ -156,13 +150,14 @@ private:
 
 DECLARE_MODULE(Settings, settings)
 
-#define GET_SETTING(path) \
-    ([]() -> decltype(auto) { \
-        auto d = addon::settings->read([](const auto& s) -> decltype(auto) { return s.path; }); \
-        return d; \
-    }())
+#define GET_SETTING(path)                                                                       \
+	([]() -> decltype(auto) {                                                                   \
+		auto d = addon::settings->read([](const auto& s) -> decltype(auto) { return s.path; }); \
+		return d;                                                                               \
+	}())
 
-#define SET_SETTING(path, value) \
-    do { \
-        addon::settings->write([&](auto& d) { d.path = value; }); \
-    } while (0)
+#define SET_SETTING(path, value)                                  \
+	do                                                            \
+	{                                                             \
+		addon::settings->write([&](auto& d) { d.path = value; }); \
+	} while (0)

@@ -6,7 +6,7 @@
 
 IMPLEMENT_MODULE(DPSReportUploader, dps_report_uploader)
 
-#define CPR_PARAMETERS cpr::Timeout{ std::chrono::seconds(60) }
+#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(60))
 #define UPLOAD_CONTENT_URL "https://dps.report/uploadContent"
 
 void DPSReportUploader::add_log(std::shared_ptr<Log> log)
@@ -59,7 +59,6 @@ void DPSReportUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void DPSReportUploader::run()
 {
-	std::unique_lock upload_lock(upload_mutex);
 	LOG("Starting dps.report uploader", ELogLevel::ELogLevel_DEBUG);
 
 	while (initialized.load())
@@ -101,7 +100,20 @@ void DPSReportUploader::run()
 			}
 
 			if (GET_SETTING(dps_report.auto_upload_copy_url_to_clipboard))
-				ImGui::SetClipboardText(upload.url.c_str());
+			{
+				if (OpenClipboard(nullptr))
+				{
+					EmptyClipboard();
+					HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, upload.url.size() + 1);
+					if (hg)
+					{
+						memcpy(GlobalLock(hg), upload.url.c_str(), upload.url.size() + 1);
+						GlobalUnlock(hg);
+						SetClipboardData(CF_TEXT, hg);
+					}
+					CloseClipboard();
+				}
+			}
 		}
 		catch (const std::exception& e)
 		{
@@ -122,10 +134,7 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 {
 	cpr::Url url(UPLOAD_CONTENT_URL);
 	cpr::Parameters parameters{};
-	cpr::Multipart multipart{
-		{ "file", cpr::File(evtc_file_path.string(), evtc_file_path.filename().string()) },
-		{ "json", "1" }
-	};
+	cpr::Multipart multipart{ { "file", cpr::File(evtc_file_path.string(), evtc_file_path.filename().string()) }, { "json", "1" } };
 
 	auto settings = GET_SETTING(dps_report);
 

@@ -2,10 +2,10 @@
 
 #include "evtc.h"
 
-#include <shared_mutex>
-#include <filesystem>
-#include <chrono>
 #include <atomic>
+#include <chrono>
+#include <filesystem>
+#include <shared_mutex>
 
 enum class ParseStatus
 {
@@ -50,7 +50,7 @@ class DpsReportUpload : public Upload
 public:
 	UploadStatus status = UploadStatus::AVAILABLE;
 
-	std::string url = "";
+	std::string url;
 	std::string id;
 	std::string user_token;
 
@@ -66,8 +66,8 @@ public:
 class Encounter
 {
 public:
-	std::string name = "";
-	std::string account_name = "";
+	std::string name;
+	std::string account_name;
 	int duration_ms = 0;
 	bool success = false;
 	bool has_boss = false;
@@ -85,10 +85,7 @@ public:
 	std::filesystem::path evtc_file_path;
 	std::chrono::system_clock::time_point evtc_file_time;
 
-	auto is_valid() const -> bool
-	{
-		return trigger_id != TriggerID::Invalid && !evtc_file_path.empty();
-	}
+	bool is_valid() const { return trigger_id != TriggerID::Invalid && !evtc_file_path.empty(); }
 };
 
 class ParserData
@@ -101,10 +98,7 @@ public:
 
 	Encounter encounter = Encounter();
 
-	auto is_success() const -> bool
-	{
-		return status == ParseStatus::PARSED && encounter.success;
-	}
+	bool is_success() const { return status == ParseStatus::PARSED && encounter.success; }
 
 	ParseStatus status = ParseStatus::UNPARSED;
 };
@@ -114,7 +108,7 @@ using EncounterLogID = std::string;
 class LogData : public EVTCParserData
 {
 public:
-	EncounterLogID id = ""; //unique identifier based on evtc file path arcdps.cbtlogs/{ encounter_id }
+	EncounterLogID id; // unique identifier based on evtc file path arcdps.cbtlogs/{ encounter_id }
 
 	ParserData parser_data = ParserData();
 	DpsReportUpload dps_report_upload = DpsReportUpload();
@@ -129,15 +123,9 @@ public:
 
 	~Log();
 
-	auto get_data() -> LogData
-	{
-		return *this;
-	}
+	LogData get_data() { return *this; }
 
-	auto update_view() -> void
-	{
-		view_updated_required.store(true);
-	}
+	void update_view() { view_updated_required.store(true); }
 
 	std::atomic<bool> view_updated_required = true;
 

@@ -1,0 +1,3 @@
+#include "resource.h"
+
+IDR_LOG_ICON RCDATA "resources/icon.png"

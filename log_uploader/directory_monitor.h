@@ -1,7 +1,7 @@
 #pragma once
 
-#include <filesystem>
 #include <Windows.h>
+#include <filesystem>
 #include <thread>
 
 #include "module.h"

@@ -1,7 +1,7 @@
-#include "api.h"
 #include "elite_insights.h"
-#include "settings.h"
+#include "api.h"
 #include "logger.h"
+#include "settings.h"
 
 #include <cpr/cpr.h>
 #include <miniz/miniz.h>
@@ -14,7 +14,7 @@
 #define SETTINGS_FILE "Settings" / "settings.conf"
 #define VERSION_FILE ".version"
 
-#define CPR_PARAMETERS cpr::Timeout{ std::chrono::seconds(30) }
+#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(30))
 #define GITHUB_RELEASES_URL std::string("https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/")
 #define WINGMAN_VERSION_URL std::string("https://gw2wingman.nevermindcreations.de/api/EIversion")
 
@@ -60,8 +60,10 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 	}
 
 	auto command = "\"" + executable_file.string() + "\" -c \"" + settings_file.string() + "\" \"" + evtc_file_path.string() + "\"";
+	std::vector<char> command_buffer(command.begin(), command.end());
+	command_buffer.push_back('\0');
 
-	if (!CreateProcessA(NULL, const_cast<char*>(command.c_str()), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
+	if (!CreateProcessA(NULL, command_buffer.data(), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
 	{
 		CloseHandle(read_pipe);
 		CloseHandle(write_pipe);
@@ -148,15 +150,14 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 			if (json.contains("isLegendaryCM"))
 				lcm = json.at("isLegendaryCM").get<bool>();
 
-			data.encounter.difficulty = cm ? EncounterDifficulty::CHALLENGE_MODE : lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
+			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
 
-			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point
-				{
-					std::istringstream ss(utc_time_str);
-					std::chrono::system_clock::time_point tp;
-					ss >> std::chrono::parse("%F %T %z", tp);
-					return tp;
-				};
+			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point {
+				std::istringstream ss(utc_time_str);
+				std::chrono::system_clock::time_point tp;
+				ss >> std::chrono::parse("%F %T %z", tp);
+				return tp;
+			};
 
 			if (json.contains("timeStartStd"))
 				data.encounter.start_time = parse_time(json.at("timeStartStd").get<std::string>());
@@ -207,7 +208,6 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 	}
 }
 
-
 void EliteInsights::install()
 {
 	installation_directory = addon::directory / INSTALLATION_DIRECTORY;
@@ -254,7 +254,7 @@ void EliteInsights::install()
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
 			if (download.status_code != 200)
-				throw std::runtime_error("Invalid HTTP status code: " + download.status_code == 0 ? "timeout" : std::to_string(download.status_code));
+				throw std::runtime_error("Invalid HTTP status code: " + (download.status_code == 0 ? std::string("timeout") : std::to_string(download.status_code)));
 
 			mz_zip_archive zip_archive{};
 			mz_zip_zero_struct(&zip_archive);
@@ -368,7 +368,6 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 	}
 }
 
-
 EliteInsightsVersion EliteInsights::get_local_version()
 {
 	auto version = EliteInsightsVersion();
@@ -394,44 +393,43 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 {
 	EliteInsightsVersion version;
 
-	auto get_github_version = [this](const std::string& url) -> EliteInsightsVersion
+	auto get_github_version = [this](const std::string& url) -> EliteInsightsVersion {
+		auto version = EliteInsightsVersion();
+
+		try
 		{
-			auto version = EliteInsightsVersion();
+			auto version_response = cpr::Get(cpr::Url{ url }, CPR_PARAMETERS);
 
-			try
+			if (version_response.status_code != 200)
+				throw std::exception("Invalid http status code");
+
+			const auto json_response = nlohmann::json::parse(version_response.text);
+
+			if (!json_response.contains("tag_name") || !json_response.contains("assets") || !json_response["assets"].is_array() || json_response["assets"].empty())
+				throw std::exception("Invalid json response");
+
+			std::string download_url;
+
+			for (const auto& asset : json_response["assets"])
 			{
-				auto version_response = cpr::Get(cpr::Url{ url }, CPR_PARAMETERS);
-
-				if (version_response.status_code != 200)
-					throw std::exception("Invalid http status code");
-
-				const auto json_response = nlohmann::json::parse(version_response.text);
-
-				if (!json_response.contains("tag_name") || !json_response.contains("assets") || !json_response["assets"].is_array() || json_response["assets"].empty())
-					throw std::exception("Invalid json response");
-
-				std::string download_url;
-
-				for (const auto& asset : json_response["assets"])
+				if (asset.contains("name") && asset["name"].is_string() && asset["name"] == "GW2EICLI.zip" && asset.contains("browser_download_url") && asset["browser_download_url"].is_string())
 				{
-					if (asset.contains("name") && asset["name"].is_string() && asset["name"] == "GW2EICLI.zip" && asset.contains("browser_download_url") && asset["browser_download_url"].is_string())
-					{
-						download_url = asset["browser_download_url"].get<std::string>();
-						break;
-					}
+					download_url = asset["browser_download_url"].get<std::string>();
+					break;
 				}
-				if (download_url.empty())
-					throw std::exception("Asset download url not found");
-
-				version = EliteInsightsVersion(json_response["tag_name"].get<std::string>(), download_url);
 			}
-			catch (const std::exception& e)
-			{
-				LOG("Failed to parse release information: " + std::string(e.what()), ELogLevel_WARNING);
-			}
+			if (download_url.empty())
+				throw std::exception("Asset download url not found");
 
-			return version;
-		};
+			version = EliteInsightsVersion(json_response["tag_name"].get<std::string>(), download_url);
+		}
+		catch (const std::exception& e)
+		{
+			LOG("Failed to parse release information: " + std::string(e.what()), ELogLevel::ELogLevel_WARNING);
+		}
+
+		return version;
+	};
 
 	if (update_channel == ParserUpdateChannel::LATEST_WINGMAN)
 	{
@@ -439,7 +437,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 
 		if (version_response.status_code != 200)
 		{
-			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", ELogLevel_WARNING);
+			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", ELogLevel::ELogLevel_WARNING);
 			return version;
 		}
 

@@ -3,10 +3,9 @@
 #include "log_manager.h"
 #include "logger.h"
 
-#include <mINI/INI.h>
-
 #include <ShlObj.h>
 #include <deque>
+#include <fstream>
 
 IMPLEMENT_MODULE(DirectoryMonitor, directory_monitor)
 
@@ -20,22 +19,18 @@ void DirectoryMonitor::initialize()
 	{
 		try
 		{
-			mINI::INIFile arcdps_ini(arcdps_ini_path.string());
+			wchar_t buffer[MAX_PATH] = {};
+			GetPrivateProfileStringW(L"session", L"boss_encounter_path", L"", buffer, MAX_PATH, arcdps_ini_path.wstring().c_str());
 
-			mINI::INIStructure ini;
+			std::wstring boss_path(buffer);
 
-			if (arcdps_ini.read(ini))
+			if (!boss_path.empty())
 			{
-				if (ini.has("session") && ini.get("session").has("boss_encounter_path") && !ini.get("session").get("boss_encounter_path").empty())
-				{
-					monitor_directory = std::filesystem::path(ini.get("session").get("boss_encounter_path")) / "arcdps.cbtlogs";
-					use_default_path = monitor_directory.empty();
-				}
-				else
-					throw std::exception("Failed to read boss_encounter_path from arcdps.ini");
+				monitor_directory = std::filesystem::path(boss_path) / "arcdps.cbtlogs";
+				use_default_path = monitor_directory.empty();
 			}
 			else
-				throw std::exception("Failed to read arcdps.ini");
+				throw std::exception("Failed to read boss_encounter_path from arcdps.ini");
 		}
 		catch (std::exception& e)
 		{
@@ -161,11 +156,10 @@ void DirectoryMonitor::run()
 						if (extension == ".evtc" || extension == ".zevtc")
 						{
 							{
-								static const auto is_file_openable = [](const std::filesystem::path& log_path) -> bool
-									{
-										std::ifstream file_stream(log_path);
-										return file_stream.is_open();
-									};
+								static const auto is_file_openable = [](const std::filesystem::path& log_path) -> bool {
+									std::ifstream file_stream(log_path);
+									return file_stream.is_open();
+								};
 
 								auto file_path = monitor_directory / file_name;
 

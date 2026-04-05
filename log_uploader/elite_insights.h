@@ -14,6 +14,7 @@ class EliteInsightsVersion
 private:
 	int v1 = 0, v2 = 0, v3 = 0, v4 = 0;
 	bool valid = false;
+
 public:
 	std::string download_url;
 	std::string tag_name;
@@ -35,46 +36,30 @@ public:
 			std::istringstream iss(version_str);
 			iss >> v1 >> v2 >> v3 >> v4;
 
-			this->valid = !iss.fail() && std::regex_match(tag_name, std::regex("^v(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)$"));
+			this->valid = !iss.fail();
+			if (this->valid)
+			{
+				static const std::regex version_regex("^v(\\d+)\\.(\\d+)\\.(\\d+)\\.(\\d+)$");
+				this->valid = std::regex_match(tag_name, version_regex);
+			}
 		}
 	}
 
-	bool is_valid() const
-	{
-		return this->valid;
-	}
+	bool is_valid() const { return this->valid; }
 
 	const std::string get_tag() const { return this->tag_name; }
 
-	bool operator==(const EliteInsightsVersion& other) const
-	{
-		return v1 == other.v1 && v2 == other.v2 && v3 == other.v3 && v4 == other.v4;
-	}
+	bool operator==(const EliteInsightsVersion& other) const { return v1 == other.v1 && v2 == other.v2 && v3 == other.v3 && v4 == other.v4; }
 
-	bool operator!=(const EliteInsightsVersion& other) const
-	{
-		return !(*this == other);
-	}
+	bool operator!=(const EliteInsightsVersion& other) const { return !(*this == other); }
 
-	bool operator<(const EliteInsightsVersion& other) const
-	{
-		return std::tie(v1, v2, v3, v4) < std::tie(other.v1, other.v2, other.v3, other.v4);
-	}
+	bool operator<(const EliteInsightsVersion& other) const { return std::tie(v1, v2, v3, v4) < std::tie(other.v1, other.v2, other.v3, other.v4); }
 
-	bool operator>(const EliteInsightsVersion& other) const
-	{
-		return other < *this;
-	}
+	bool operator>(const EliteInsightsVersion& other) const { return other < *this; }
 
-	bool operator<=(const EliteInsightsVersion& other) const
-	{
-		return !(other < *this);
-	}
+	bool operator<=(const EliteInsightsVersion& other) const { return !(other < *this); }
 
-	bool operator>=(const EliteInsightsVersion& other) const
-	{
-		return !(*this < other);
-	}
+	bool operator>=(const EliteInsightsVersion& other) const { return !(*this < other); }
 };
 
 class EliteInsights

@@ -81,7 +81,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 	index += 4; // evtc identifier
 	index += 4; // version
 	index += 1; // revision
-	index += 4; // ?
+	index += 4; // unknown/reserved
 
 	data.trigger_id = *reinterpret_cast<TriggerID*>(file_data.data() + index);
 	index += sizeof(TriggerID);

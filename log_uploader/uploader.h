@@ -13,20 +13,20 @@ public:
 
 	virtual void add_log(std::shared_ptr<Log> log) = 0;
 
-	auto initialize() -> void
+	void initialize()
 	{
 		initialized.store(true);
 		upload_thread = std::thread(&Uploader::run, this);
 	}
 
-	auto clear_upload_queue() -> void
+	void clear_upload_queue()
 	{
 		std::lock_guard lock(this->upload_queue_mutex);
 		std::queue<std::shared_ptr<Log>> empty;
 		std::swap(upload_queue, empty);
 	}
 
-	auto release() -> void
+	void release()
 	{
 		initialized.store(false);
 
@@ -36,10 +36,9 @@ public:
 
 		if (this->upload_thread.joinable())
 			this->upload_thread.join();
-	};
+	}
 
 protected:
-	std::mutex upload_mutex;
 	std::condition_variable upload_cv;
 
 	std::mutex upload_queue_mutex;

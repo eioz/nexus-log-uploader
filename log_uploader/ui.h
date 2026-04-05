@@ -1,14 +1,14 @@
 #pragma once
 
-#include "module.h"
 #include "logs_table.h"
+#include "module.h"
 #include "settings.h"
 
 class UI
 {
 public:
 	void initialize();
-	
+
 	void render_windows();
 	void render_options();
 	void render_context_menu();

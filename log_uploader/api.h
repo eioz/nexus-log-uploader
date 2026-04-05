@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Nexus.h>
 #include <Mumble.h>
+#include <Nexus.h>
 
 #include <filesystem>
 
@@ -10,8 +10,8 @@
 
 namespace addon
 {
-	extern std::filesystem::path directory;
-	extern AddonAPI* api;
-	extern Mumble::Data* mumble;
-	extern NexusLinkData* nexus;
-}
+extern std::filesystem::path directory;
+extern AddonAPI* api;
+extern Mumble::Data* mumble;
+extern NexusLinkData* nexus;
+} // namespace addon

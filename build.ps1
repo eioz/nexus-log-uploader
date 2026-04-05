@@ -56,10 +56,10 @@ else {
 }
 
 if ($Mock) {
-    $MockDir = Join-Path $PSScriptRoot "mock"
+    $MockDir = Join-Path $PSScriptRoot "nexus-mock"
     $MockSolution = Join-Path $MockDir "nexus_mock.sln"
     if (-not (Test-Path $MockSolution)) {
-        Write-Error "Mock not found at $MockDir. Run: git submodule update --init mock"
+        Write-Error "Mock not found at $MockDir. Run: git submodule update --init nexus-mock"
         exit 1
     }
 

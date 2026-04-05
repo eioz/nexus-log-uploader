@@ -1,9 +1,10 @@
+#include "ui_elements.h"
 #include "dps_report_uploader.h"
 #include "parser.h"
-#include "ui_elements.h"
 #include "wingman_uploader.h"
 
 #include <imgui_internal.h>
+#include <unordered_map>
 
 #include <ShlObj.h>
 
@@ -33,18 +34,23 @@ void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 {
 	ID id("Parser Button");
 
-	static const auto get_text = [](ParseStatus parse_status) -> const char*
+	static const auto get_text = [](ParseStatus parse_status) -> const char* {
+		switch (parse_status)
 		{
-			switch (parse_status)
-			{
-			case ParseStatus::UNPARSED: return "Parse";
-			case ParseStatus::QUEUED: return "Queued";
-			case ParseStatus::PARSING: return "Parsing";
-			case ParseStatus::PARSED: return "Open";
-			case ParseStatus::FAILED: return "Failed";
-			default: return "Unknown";
-			}
-		};
+		case ParseStatus::UNPARSED:
+			return "Parse";
+		case ParseStatus::QUEUED:
+			return "Queued";
+		case ParseStatus::PARSING:
+			return "Parsing";
+		case ParseStatus::PARSED:
+			return "Open";
+		case ParseStatus::FAILED:
+			return "Failed";
+		default:
+			return "Unknown";
+		}
+	};
 
 	auto available = log_data.parser_data.status == ParseStatus::PARSED || log_data.parser_data.status == ParseStatus::UNPARSED;
 
@@ -56,26 +62,33 @@ void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 			ShellExecute(nullptr, L"open", log_data.parser_data.html_file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 	}
 
-	if(log_data.parser_data.error_message.has_value())
+	if (log_data.parser_data.error_message.has_value())
 		HoverTooltip(log_data.parser_data.error_message.value().c_str());
 }
 
 bool ImGui::ButtonUpload(UploadStatus upload_status, bool available)
 {
-	static const auto get_text = [](UploadStatus status) -> const char*
+	static const auto get_text = [](UploadStatus status) -> const char* {
+		switch (status)
 		{
-			switch (status)
-			{
-			case UploadStatus::UNAVAILABLE: return "Unavailable";
-			case UploadStatus::AVAILABLE: return "Upload";
-			case UploadStatus::QUEUED: return "Queued";
-			case UploadStatus::UPLOADING: return "Uploading";
-			case UploadStatus::UPLOADED: return "Uploaded";
-			case UploadStatus::SKIPPED: return "Skipped";
-			case UploadStatus::FAILED: return "Failed";
-			default: return "Unknown";
-			}
-		};
+		case UploadStatus::UNAVAILABLE:
+			return "Unavailable";
+		case UploadStatus::AVAILABLE:
+			return "Upload";
+		case UploadStatus::QUEUED:
+			return "Queued";
+		case UploadStatus::UPLOADING:
+			return "Uploading";
+		case UploadStatus::UPLOADED:
+			return "Uploaded";
+		case UploadStatus::SKIPPED:
+			return "Skipped";
+		case UploadStatus::FAILED:
+			return "Failed";
+		default:
+			return "Unknown";
+		}
+	};
 
 	return ButtonDisabled(get_text(upload_status), !available);
 }
@@ -86,20 +99,27 @@ void ImGui::ButtonDPSReportUpload(std::shared_ptr<Log> log, DpsReportUpload& upl
 
 	auto available = upload_data.status == UploadStatus::AVAILABLE || upload_data.status == UploadStatus::UPLOADED;
 
-	static const auto get_text = [](UploadStatus status) -> const char*
+	static const auto get_text = [](UploadStatus status) -> const char* {
+		switch (status)
 		{
-			switch (status)
-			{
-			case UploadStatus::UNAVAILABLE: return "Unavailable";
-			case UploadStatus::AVAILABLE: return "Upload";
-			case UploadStatus::QUEUED: return "Queued";
-			case UploadStatus::UPLOADING: return "Uploading";
-			case UploadStatus::UPLOADED: return "Open";
-			case UploadStatus::SKIPPED: return "Skipped";
-			case UploadStatus::FAILED: return "Failed";
-			default: return "Unknown";
-			}
-		};
+		case UploadStatus::UNAVAILABLE:
+			return "Unavailable";
+		case UploadStatus::AVAILABLE:
+			return "Upload";
+		case UploadStatus::QUEUED:
+			return "Queued";
+		case UploadStatus::UPLOADING:
+			return "Uploading";
+		case UploadStatus::UPLOADED:
+			return "Open";
+		case UploadStatus::SKIPPED:
+			return "Skipped";
+		case UploadStatus::FAILED:
+			return "Failed";
+		default:
+			return "Unknown";
+		}
+	};
 
 	if (ButtonDisabled(get_text(upload_data.status), !available))
 	{
@@ -135,29 +155,33 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 
 	auto r = false;
 
-	static char search_buffer[64] = "";
-	static char previous_search_buffer[64] = "";
-	static bool expand_on_search_update = false;
-	static bool expand_all = false;
-	static bool collapse_all = false;
+	struct SelectorState
+	{
+		char search_buffer[64] = {};
+		char previous_search_buffer[64] = {};
+		bool expand_on_search_update = false;
+		bool expand_all = false;
+		bool collapse_all = false;
+	};
+
+	static std::unordered_map<ImGuiID, SelectorState> selector_states;
+	auto state_id = GetID(label);
+	auto& state = selector_states[state_id];
 
 	Text(label);
 	Spacing();
 
-	if (InputText("Search", search_buffer, IM_ARRAYSIZE(search_buffer)))
+	if (InputText("Search", state.search_buffer, IM_ARRAYSIZE(state.search_buffer)))
 	{
-		if (strcmp(search_buffer, previous_search_buffer) != 0)
+		if (strcmp(state.search_buffer, state.previous_search_buffer) != 0)
 		{
-			expand_on_search_update = true;
-			strncpy_s(previous_search_buffer, search_buffer, sizeof(previous_search_buffer));
+			state.expand_on_search_update = true;
+			strncpy_s(state.previous_search_buffer, state.search_buffer, sizeof(state.previous_search_buffer));
 		}
 	}
 
-	std::string search_text_lower = search_buffer;
-	std::transform(search_text_lower.begin(), search_text_lower.end(), search_text_lower.begin(), [](unsigned char c)
-		{
-			return std::tolower(c);
-		});
+	std::string search_text_lower = state.search_buffer;
+	std::transform(search_text_lower.begin(), search_text_lower.end(), search_text_lower.begin(), [](unsigned char c) { return std::tolower(c); });
 	Spacing();
 	if (Button("Select All"))
 	{
@@ -174,10 +198,7 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 						std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
 						std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
 
-						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c)
-							{
-								return std::tolower(c);
-							});
+						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
 						if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
 							if (std::find(value->begin(), value->end(), trigger_id) == value->end())
@@ -204,10 +225,7 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 						std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
 						std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
 
-						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c)
-							{
-								return std::tolower(c);
-							});
+						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
 						if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
 							value->erase(std::remove(value->begin(), value->end(), trigger_id), value->end());
@@ -222,14 +240,14 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 	SameLine();
 	if (Button("Expand All"))
 	{
-		expand_all = true;
-		collapse_all = false;
+		state.expand_all = true;
+		state.collapse_all = false;
 	}
 	SameLine();
 	if (Button("Collapse All"))
 	{
-		collapse_all = true;
-		expand_all = false;
+		state.collapse_all = true;
+		state.expand_all = false;
 	}
 
 	Spacing();
@@ -253,10 +271,7 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 					std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
 					std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
 
-					std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c)
-						{
-							return std::tolower(c);
-						});
+					std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
 					if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
 						filtered_triggers.push_back(trigger_id);
@@ -273,11 +288,11 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 		if (!main_category_matches)
 			continue;
 
-		bool main_category_open = expand_all || (expand_on_search_update && main_category_matches);
+		bool main_category_open = state.expand_all || (state.expand_on_search_update && main_category_matches);
 
 		if (main_category_open)
 			SetNextItemOpen(true, ImGuiCond_Always);
-		else if (collapse_all)
+		else if (state.collapse_all)
 			SetNextItemOpen(false, ImGuiCond_Always);
 
 		if (CollapsingHeader(main_category.c_str(), ImGuiTreeNodeFlags_AllowItemOverlap))
@@ -286,11 +301,11 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 
 			for (const auto& [sub_category, filtered_triggers] : filtered_subcategories)
 			{
-				bool sub_category_open = expand_all || (expand_on_search_update && main_category_matches);
+				bool sub_category_open = state.expand_all || (state.expand_on_search_update && main_category_matches);
 
 				if (sub_category_open)
 					SetNextItemOpen(true, ImGuiCond_Always);
-				else if (collapse_all)
+				else if (state.collapse_all)
 					SetNextItemOpen(false, ImGuiCond_Always);
 
 				if (TreeNode(sub_category.c_str()))
@@ -327,9 +342,9 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 		}
 	}
 
-	expand_all = false;
-	collapse_all = false;
-	expand_on_search_update = false;
+	state.expand_all = false;
+	state.collapse_all = false;
+	state.expand_on_search_update = false;
 
 	return r;
 }
@@ -337,7 +352,7 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 void ImGui::HoverTooltip(const char* text)
 {
 	if (IsItemHovered())
-		SetTooltip(text);
+		SetTooltip("%s", text);
 }
 
 void ImGui::CenterNextTextItemHorizontally(const char* text)
