@@ -8,7 +8,7 @@
 ![display-options](screenshots/display-options.png)
 ![parser-options](screenshots/parser-options.png)
 ![dps-report-options](screenshots/dps-report-options.png)
-![wingman-options](screenshots/wingman-options.png)W
+![wingman-options](screenshots/wingman-options.png)
 
 ## Building
 

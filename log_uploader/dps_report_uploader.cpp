@@ -19,7 +19,7 @@ void DPSReportUploader::add_log(std::shared_ptr<Log> log)
 	// allow uploading for available and failed logs
 	if (log->dps_report_upload.status != UploadStatus::AVAILABLE && log->dps_report_upload.status != UploadStatus::FAILED)
 	{
-		LOG("Log unavailable for dps.report upload: " + log->id, ELogLevel::ELogLevel_WARNING);
+		LOG("Log unavailable for dps.report upload: " + log->id, LOGL_WARNING);
 		return;
 	}
 
@@ -59,7 +59,7 @@ void DPSReportUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void DPSReportUploader::run()
 {
-	LOG("Starting dps.report uploader", ELogLevel::ELogLevel_DEBUG);
+	LOG("Starting dps.report uploader", LOGL_DEBUG);
 
 	while (initialized.load())
 	{
@@ -76,7 +76,7 @@ void DPSReportUploader::run()
 		std::unique_lock lock(log->mutex);
 		if (log->dps_report_upload.status != UploadStatus::QUEUED)
 		{
-			LOG("Log unavailable for dps.report upload: " + log->id, ELogLevel::ELogLevel_WARNING);
+			LOG("Log unavailable for dps.report upload: " + log->id, LOGL_WARNING);
 			continue;
 		}
 
@@ -91,12 +91,12 @@ void DPSReportUploader::run()
 		try
 		{
 			upload = this->upload(evtc_file_path);
-			LOG("Uploaded " + id + " to dps.report: " + upload.url, ELogLevel::ELogLevel_INFO);
+			LOG("Uploaded " + id + " to dps.report: " + upload.url, LOGL_INFO);
 
 			if (GET_SETTING(dps_report.user_token).empty() && !upload.user_token.empty())
 			{
 				SET_SETTING(dps_report.user_token, upload.user_token);
-				LOG("dps.report user token acquired: " + upload.user_token, ELogLevel::ELogLevel_INFO);
+				LOG("dps.report user token acquired: " + upload.user_token, LOGL_INFO);
 			}
 
 			if (GET_SETTING(dps_report.auto_upload_copy_url_to_clipboard))
@@ -119,7 +119,7 @@ void DPSReportUploader::run()
 		{
 			upload.status = UploadStatus::FAILED;
 			upload.error_message = e.what();
-			LOG("dps.report upload failed for " + id + ". Error: " + e.what(), ELogLevel::ELogLevel_WARNING);
+			LOG("dps.report upload failed for " + id + ". Error: " + e.what(), LOGL_WARNING);
 		}
 
 		lock.lock();
@@ -127,7 +127,7 @@ void DPSReportUploader::run()
 		log->update_view();
 	}
 
-	LOG("Stopping dps.report uploader", ELogLevel::ELogLevel_DEBUG);
+	LOG("Stopping dps.report uploader", LOGL_DEBUG);
 }
 
 DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)

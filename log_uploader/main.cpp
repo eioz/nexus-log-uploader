@@ -8,6 +8,11 @@
 #include "ui.h"
 #include "wingman_uploader.h"
 
+#define V_MAJOR 1
+#define V_MINOR 1
+#define V_BUILD 0
+#define V_REVISION 0
+
 #define HOTKEY_UI "Open Log Uploader"
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
 #define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
@@ -25,34 +30,37 @@ void render() { addon::ui->render_windows(); }
 
 void render_options() { addon::ui->render_options(); }
 
-void load(AddonAPI* addon_api)
+void load(AddonAPI_t* addon_api)
 {
 	addon::api = addon_api;
 
 	if (addon::api == nullptr)
 		return;
 
-	addon::mumble = static_cast<Mumble::Data*>(addon::api->DataLink.Get("DL_MUMBLE_LINK"));
-	addon::nexus = static_cast<NexusLinkData*>(addon::api->DataLink.Get("DL_NEXUS_LINK"));
-	addon::directory = std::filesystem::path(addon::api->Paths.GetAddonDirectory(ADDON_DIRECTORY));
+	addon::mumble = static_cast<Mumble::Data*>(addon::api->DataLink_Get(DL_MUMBLE_LINK));
+	addon::nexus = static_cast<NexusLinkData_t*>(addon::api->DataLink_Get(DL_NEXUS_LINK));
+	addon::directory = std::filesystem::path(addon::api->Paths_GetAddonDirectory(ADDON_DIRECTORY));
 
 	if (addon::mumble == nullptr || addon::nexus == nullptr || addon::directory.empty())
 		return;
 
-	addon::api->InputBinds.RegisterWithString(
+	addon::api->InputBinds_RegisterWithString(
 	    HOTKEY_UI,
 	    [](const char* key, bool is_released) {
 		    if (strcmp(key, HOTKEY_UI) == 0 && !is_released)
 			    addon::ui->logs_table.toggle_visibility();
 	    },
 	    "CTRL+L");
-	addon::api->QuickAccess.Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
-	addon::api->Textures.LoadFromResource(QUICK_ACCESS_TEXTURE, IDR_LOG_ICON, g_module, nullptr);
+	if (HRSRC hres = FindResource(g_module, MAKEINTRESOURCE(IDR_LOG_ICON), RT_RCDATA))
+		if (HGLOBAL hdata = LoadResource(g_module, hres))
+			if (void* ptr = LockResource(hdata))
+				addon::api->Textures_LoadFromMemory(QUICK_ACCESS_TEXTURE, ptr, SizeofResource(g_module, hres), nullptr);
+	addon::api->QuickAccess_Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
 
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))
 		{
-			addon::api->Log(ELogLevel::ELogLevel_CRITICAL, ADDON_LOG_CHANNEL, "Failed to create addon directory.");
+			addon::api->Log(LOGL_CRITICAL, ADDON_LOG_CHANNEL, "Failed to create addon directory.");
 			return;
 		}
 
@@ -61,8 +69,8 @@ void load(AddonAPI* addon_api)
 
 	addon::settings->initialize();
 
-	addon::api->Renderer.Register(ERenderType_Render, render);
-	addon::api->Renderer.Register(ERenderType_OptionsRender, render_options);
+	addon::api->GUI_Register(RT_Render, render);
+	addon::api->GUI_Register(RT_OptionsRender, render_options);
 
 	addon::parser->initialize();
 	addon::dps_report_uploader->initialize();
@@ -75,11 +83,11 @@ void unload()
 {
 	addon::settings->release();
 
-	addon::api->InputBinds.Deregister(HOTKEY_UI);
-	addon::api->QuickAccess.Remove(QUICK_ACCESS_UI);
+	addon::api->InputBinds_Deregister(HOTKEY_UI);
+	addon::api->QuickAccess_Remove(QUICK_ACCESS_UI);
 
-	addon::api->Renderer.Deregister(render);
-	addon::api->Renderer.Deregister(render_options);
+	addon::api->GUI_Deregister(render);
+	addon::api->GUI_Deregister(render_options);
 
 	addon::directory_monitor->release();
 	addon::parser->release();
@@ -87,14 +95,9 @@ void unload()
 	addon::wingman_uploader->release();
 }
 
-AddonDefinition addon_definition;
+AddonDefinition_t addon_definition;
 
-#define V_MAJOR 1
-#define V_MINOR 0
-#define V_BUILD 0
-#define V_REVISION 3
-
-extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
+extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef()
 {
 	addon_definition.Signature = -69;
 	addon_definition.APIVersion = NEXUS_API_VERSION;
@@ -107,12 +110,12 @@ extern "C" __declspec(dllexport) AddonDefinition* GetAddonDef()
 	addon_definition.Description = "Automatically parse new logs locally and upload them to dps.report or Wingman.";
 	addon_definition.Load = load;
 	addon_definition.Unload = unload;
-	addon_definition.Flags = EAddonFlags_None;
+	addon_definition.Flags = AF_None;
 
 #ifdef _DEBUG
-	addon_definition.Provider = EUpdateProvider_None;
+	addon_definition.Provider = UP_None;
 #else
-	addon_definition.Provider = EUpdateProvider_GitHub;
+	addon_definition.Provider = UP_GitHub;
 	addon_definition.UpdateLink = "https://github.com/eioz/nexus-log-uploader";
 #endif // !_DEBUG
 

@@ -22,7 +22,7 @@ void WingmanUploader::add_log(std::shared_ptr<Log> log)
 	// allow uploading for available and failed logs
 	if (log->parser_data.status != ParseStatus::PARSED || (log->wingman_upload.status != UploadStatus::AVAILABLE && log->wingman_upload.status != UploadStatus::FAILED))
 	{
-		LOG("Log unavailable for wingman upload: " + log->id, ELogLevel::ELogLevel_WARNING);
+		LOG("Log unavailable for wingman upload: " + log->id, LOGL_WARNING);
 		return;
 	}
 
@@ -61,7 +61,7 @@ void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void WingmanUploader::run()
 {
-	LOG("Starting Wingman uploader", ELogLevel::ELogLevel_DEBUG);
+	LOG("Starting Wingman uploader", LOGL_DEBUG);
 
 	while (true)
 	{
@@ -81,7 +81,7 @@ void WingmanUploader::run()
 
 		if (log->parser_data.status != ParseStatus::PARSED || log->wingman_upload.status != UploadStatus::QUEUED)
 		{
-			LOG("Log unavailable for wingman upload: " + log->id, ELogLevel::ELogLevel_WARNING);
+			LOG("Log unavailable for wingman upload: " + log->id, LOGL_WARNING);
 			log->wingman_upload.status = UploadStatus::FAILED;
 			continue;
 		}
@@ -100,13 +100,13 @@ void WingmanUploader::run()
 		try
 		{
 			upload = this->upload(log_data);
-			LOG("Wingman upload successful: " + id, ELogLevel::ELogLevel_INFO);
+			LOG("Wingman upload successful: " + id, LOGL_INFO);
 		}
 		catch (const std::exception& e)
 		{
 			upload.status = UploadStatus::FAILED;
 			upload.error_message = e.what();
-			LOG("Wingman upload failed: " + id + ". Error: " + e.what(), ELogLevel::ELogLevel_WARNING);
+			LOG("Wingman upload failed: " + id + ". Error: " + e.what(), LOGL_WARNING);
 		}
 
 		lock.lock();
@@ -115,7 +115,7 @@ void WingmanUploader::run()
 		log->update_view();
 	}
 
-	LOG("Wingman uploader stopped", ELogLevel::ELogLevel_DEBUG);
+	LOG("Wingman uploader stopped", LOGL_DEBUG);
 }
 
 WingmanUpload WingmanUploader::upload(LogData& log_data)

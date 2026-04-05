@@ -11,7 +11,7 @@
 namespace addon
 {
 extern std::filesystem::path directory;
-extern AddonAPI* api;
+extern AddonAPI_t* api;
 extern Mumble::Data* mumble;
-extern NexusLinkData* nexus;
+extern NexusLinkData_t* nexus;
 } // namespace addon

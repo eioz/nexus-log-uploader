@@ -11,7 +11,7 @@ IMPLEMENT_MODULE(DirectoryMonitor, directory_monitor)
 
 void DirectoryMonitor::initialize()
 {
-	auto arcdps_ini_path = std::filesystem::path(addon::api->Paths.GetAddonDirectory("arcdps")) / "arcdps.ini";
+	auto arcdps_ini_path = std::filesystem::path(addon::api->Paths_GetAddonDirectory("arcdps")) / "arcdps.ini";
 
 	auto use_default_path = false;
 
@@ -34,7 +34,7 @@ void DirectoryMonitor::initialize()
 		}
 		catch (std::exception& e)
 		{
-			LOG(e.what(), ELogLevel::ELogLevel_WARNING);
+			LOG(e.what(), LOGL_WARNING);
 		}
 	}
 
@@ -68,7 +68,7 @@ void DirectoryMonitor::initialize()
 		}
 		catch (std::exception& e)
 		{
-			LOG("Failed to initialize directory monitor:" + std::string(e.what()), ELogLevel::ELogLevel_CRITICAL);
+			LOG("Failed to initialize directory monitor:" + std::string(e.what()), LOGL_CRITICAL);
 			initialized.store(false);
 			return;
 		}
@@ -102,7 +102,7 @@ void DirectoryMonitor::run()
 
 	if (directory_handle == INVALID_HANDLE_VALUE)
 	{
-		LOG("Failed to get directory handle", ELogLevel::ELogLevel_CRITICAL);
+		LOG("Failed to get directory handle", LOGL_CRITICAL);
 		return;
 	}
 
@@ -113,12 +113,12 @@ void DirectoryMonitor::run()
 
 	if (monitor_overlapped.hEvent == NULL)
 	{
-		LOG("Failed to create event", ELogLevel::ELogLevel_CRITICAL);
+		LOG("Failed to create event", LOGL_CRITICAL);
 		CloseHandle(directory_handle);
 		return;
 	}
 
-	LOG("Started monitoring: " + monitor_directory.string(), ELogLevel::ELogLevel_DEBUG);
+	LOG("Started monitoring: " + monitor_directory.string(), LOGL_DEBUG);
 
 	while (true)
 	{
@@ -126,7 +126,7 @@ void DirectoryMonitor::run()
 
 		if (!result && GetLastError() != ERROR_IO_PENDING)
 		{
-			LOG("Failed to read directory changes", ELogLevel::ELogLevel_CRITICAL);
+			LOG("Failed to read directory changes", LOGL_CRITICAL);
 			break;
 		}
 
@@ -173,12 +173,12 @@ void DirectoryMonitor::run()
 
 								if (log_available)
 								{
-									LOG("New evtc file detected: " + file_path.string(), ELogLevel::ELogLevel_DEBUG);
+									LOG("New evtc file detected: " + file_path.string(), LOGL_DEBUG);
 
 									addon::log_manager->add_log(file_path);
 								}
 								else
-									LOG("Evtc file unavailable: " + file_path.string(), ELogLevel::ELogLevel_WARNING);
+									LOG("Evtc file unavailable: " + file_path.string(), LOGL_WARNING);
 							}
 						}
 					}
@@ -190,7 +190,7 @@ void DirectoryMonitor::run()
 		}
 		else if (wait_result == WAIT_FAILED)
 		{
-			LOG("WaitForSingleObject failed", ELogLevel::ELogLevel_CRITICAL);
+			LOG("WaitForSingleObject failed", LOGL_CRITICAL);
 			break;
 		}
 	}
@@ -204,5 +204,5 @@ void DirectoryMonitor::run()
 	if (directory_handle != INVALID_HANDLE_VALUE)
 		CloseHandle(directory_handle);
 
-	LOG("Directory monitor stopped", ELogLevel::ELogLevel_DEBUG);
+	LOG("Directory monitor stopped", LOGL_DEBUG);
 }

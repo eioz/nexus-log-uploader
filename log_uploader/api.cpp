@@ -3,7 +3,7 @@
 namespace addon
 {
 std::filesystem::path directory = std::filesystem::path();
-AddonAPI* api = nullptr;
+AddonAPI_t* api = nullptr;
 Mumble::Data* mumble = nullptr;
-NexusLinkData* nexus = nullptr;
+NexusLinkData_t* nexus = nullptr;
 } // namespace addon

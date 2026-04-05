@@ -235,7 +235,7 @@ void EliteInsights::install()
 
 	if (!settings.auto_update && installed)
 	{
-		LOG("Parser auto update disabled.", ELogLevel::ELogLevel_DEBUG);
+		LOG("Parser auto update disabled.", LOGL_DEBUG);
 		this->installed.store(installed);
 		return;
 	}
@@ -247,9 +247,9 @@ void EliteInsights::install()
 		if (latest_version > local_version || !installed)
 		{
 			if (installed)
-				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
+				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), LOGL_DEBUG);
 			else
-				LOG("Installing Elite Insights " + latest_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
+				LOG("Installing Elite Insights " + latest_version.get_tag(), LOGL_DEBUG);
 
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
@@ -343,7 +343,7 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 
 			if (is_installed())
 			{
-				LOG("Installed Elite Insights " + local_version.get_tag(), ELogLevel::ELogLevel_INFO);
+				LOG("Installed Elite Insights " + local_version.get_tag(), LOGL_INFO);
 				this->installed.store(true);
 				return;
 			}
@@ -352,14 +352,14 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 		}
 		else
 		{
-			LOG("Elite Insights is up to date: " + local_version.get_tag(), ELogLevel::ELogLevel_DEBUG);
+			LOG("Elite Insights is up to date: " + local_version.get_tag(), LOGL_DEBUG);
 			this->installed.store(true);
 			return;
 		}
 	}
 	else
 	{
-		LOG("Failed to determine latest Elite Insights version", ELogLevel::ELogLevel_WARNING);
+		LOG("Failed to determine latest Elite Insights version", LOGL_WARNING);
 
 		if (installed)
 			this->installed.store(true);
@@ -425,7 +425,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 		}
 		catch (const std::exception& e)
 		{
-			LOG("Failed to parse release information: " + std::string(e.what()), ELogLevel::ELogLevel_WARNING);
+			LOG("Failed to parse release information: " + std::string(e.what()), LOGL_WARNING);
 		}
 
 		return version;
@@ -437,7 +437,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 
 		if (version_response.status_code != 200)
 		{
-			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", ELogLevel::ELogLevel_WARNING);
+			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGL_WARNING);
 			return version;
 		}
 
