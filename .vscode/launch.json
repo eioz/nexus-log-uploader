@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Mock",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/nexus-mock/build/x64/Debug/nexus_mock.exe",
+      "args": [
+        "${workspaceFolder}/build/x64/Debug/log_uploader.dll"
+      ],
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "preLaunchTask": "Build Debug + Mock",
+      "console": "integratedTerminal"
+    }
+  ]
+}

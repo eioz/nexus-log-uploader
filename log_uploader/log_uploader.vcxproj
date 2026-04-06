@@ -157,7 +157,6 @@
     <ClCompile Include="..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="api.cpp" />
     <ClCompile Include="directory_monitor.cpp" />
     <ClCompile Include="dps_report_uploader.cpp" />
     <ClCompile Include="elite_insights.cpp" />
@@ -168,13 +167,15 @@
     <ClCompile Include="log_manager.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="ui_elements.cpp" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main_nexus.cpp" />
+    <ClCompile Include="main_arcdps.cpp" />
+    <ClCompile Include="platform.cpp" />
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="ui.cpp" />
     <ClCompile Include="wingman_uploader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="api.h" />
+    <ClInclude Include="arcdps.h" />
     <ClInclude Include="directory_monitor.h" />
     <ClInclude Include="dps_report_uploader.h" />
     <ClInclude Include="elite_insights.h" />
@@ -184,6 +185,7 @@
     <ClInclude Include="logs_table.h" />
     <ClInclude Include="log_manager.h" />
     <ClInclude Include="module.h" />
+    <ClInclude Include="platform.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="ui_elements.h" />
     <ClInclude Include="evtc.h" />

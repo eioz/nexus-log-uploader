@@ -36,7 +36,9 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="main_nexus.cpp" />
+    <ClCompile Include="main_arcdps.cpp" />
+    <ClCompile Include="platform.cpp" />
     <ClCompile Include="ui.cpp">
       <Filter>log manager\ui</Filter>
     </ClCompile>
@@ -61,7 +63,6 @@
     <ClCompile Include="wingman_uploader.cpp">
       <Filter>log manager\uploaders</Filter>
     </ClCompile>
-    <ClCompile Include="api.cpp" />
     <ClCompile Include="log.cpp">
       <Filter>log manager</Filter>
     </ClCompile>
@@ -79,7 +80,8 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="api.h" />
+    <ClInclude Include="platform.h" />
+    <ClInclude Include="arcdps.h" />
     <ClInclude Include="ui.h">
       <Filter>log manager\ui</Filter>
     </ClInclude>
