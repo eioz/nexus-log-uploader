@@ -30,9 +30,28 @@ static ArcdpsIniPathFn arcdps_e0 = nullptr;
 
 extern bool nexus_registered;
 
+static const char* get_log_level_str(LogLevel level)
+{
+	switch (level)
+	{
+	case LOGLEVEL_CRITICAL:
+		return "Critical";
+	case LOGLEVEL_WARNING:
+		return "Warning";
+	case LOGLEVEL_INFO:
+		return "Info";
+	case LOGLEVEL_DEBUG:
+		return "Debug";
+	case LOGLEVEL_TRACE:
+		return "Trace";
+	default:
+		return "Unknown";
+	}
+}
+
 static void arcdps_log(LogLevel level, const char* message)
 {
-	auto formatted = std::string(ADDON_LOG_CHANNEL) + ": " + message;
+	auto formatted = std::string(ADDON_LOG_CHANNEL) + ": " + (level != LOGLEVEL_INFO ? (std::string(get_log_level_str(level)) + ": ") : "") + message;
 	if (arcdps_e8)
 		arcdps_e8(formatted.data());
 	if (arcdps_e3)
@@ -86,6 +105,11 @@ static void close_mumble_link()
 		CloseHandle(mumble_file_handle);
 		mumble_file_handle = nullptr;
 	}
+}
+
+static bool is_nexus_loaded()
+{
+	return nexus_registered || GetModuleHandleA("nexus_arcdps.dll") != nullptr;
 }
 
 static uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -224,14 +248,17 @@ static void mod_release()
 
 extern "C" __declspec(dllexport) void* get_init_addr(char* arcversion, ImGuiContext* imguictx, void* id3dptr, HANDLE arcdll, void* mallocfn, void* freefn, uint32_t d3dversion)
 {
-	if (nexus_registered || GetModuleHandleA("nexus_arcdps.dll") != nullptr)
-		return nullptr;
-
 	arcdps_dll = reinterpret_cast<HMODULE>(arcdll);
 
 	arcdps_e0 = reinterpret_cast<ArcdpsIniPathFn>(GetProcAddress(arcdps_dll, "e0"));
 	arcdps_e3 = reinterpret_cast<ArcdpsLogFn>(GetProcAddress(arcdps_dll, "e3"));
 	arcdps_e8 = reinterpret_cast<ArcdpsLogFn>(GetProcAddress(arcdps_dll, "e8"));
+
+	if (is_nexus_loaded())
+	{
+		arcdps_log(LOGLEVEL_INFO, "Nexus detected, deferring initialization to Nexus module.");
+		return nullptr;
+	}
 
 	ImGui::SetCurrentContext(imguictx);
 	ImGui::SetAllocatorFunctions(reinterpret_cast<void* (*)(size_t, void*)>(mallocfn), reinterpret_cast<void (*)(void*, void*)>(freefn));
@@ -282,6 +309,8 @@ extern "C" __declspec(dllexport) void* get_release_addr()
 
 extern "C" __declspec(dllexport) wchar_t* get_update_url()
 {
+	if (is_nexus_loaded())
+		return nullptr;
 	static wchar_t url[] = L"https://github.com/eioz/nexus-log-uploader/releases/latest/download/log_uploader.dll";
 	return url;
 }
