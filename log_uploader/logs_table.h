@@ -73,6 +73,16 @@ public:
 			in_combat_override = open;
 	}
 
+	bool is_visible() const { return open; }
+
+	void set_visible(bool v)
+	{
+		std::lock_guard<std::mutex> lock(mutex);
+		open = v;
+		if (in_combat)
+			in_combat_override = v;
+	}
+
 	ImVec2 window_size = ImVec2(0, 0);
 
 private:

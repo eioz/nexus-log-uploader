@@ -1,7 +1,7 @@
 #include "logs_table.h"
-#include "api.h"
 #include "dps_report_uploader.h"
 #include "parser.h"
+#include "platform.h"
 #include "ui.h"
 #include "ui_elements.h"
 #include "wingman_uploader.h"
@@ -21,7 +21,8 @@ void LogsTable::render()
 
 	if (display_settings.hide_in_combat)
 	{
-		in_combat = addon::mumble->Context.IsInCombat;
+		if (addon::mumble != nullptr)
+			in_combat = addon::mumble->Context.IsInCombat;
 
 		if (in_combat)
 			open = in_combat_override;
@@ -52,7 +53,6 @@ void LogsTable::render()
 
 	if (ImGui::Begin("Log Uploader", &this->open, window_flags))
 	{
-		// display settings
 		{
 			auto screen_size = ImGui::GetIO().DisplaySize;
 			auto window_size = display_settings.fixed_size ? display_settings.size : ImGui::GetWindowSize();
@@ -366,7 +366,6 @@ void LogsTable::draw_context_menu()
 
 				bool any_option = false;
 
-				// Parse
 				{
 					auto& logs_for_parse = action_logs[static_cast<size_t>(LogAction::PARSE)];
 
@@ -382,7 +381,6 @@ void LogsTable::draw_context_menu()
 					}
 				}
 
-				// Open Reports
 				{
 					auto& logs_for_open = action_logs[static_cast<size_t>(LogAction::OPEN_REPORTS)];
 
@@ -398,7 +396,6 @@ void LogsTable::draw_context_menu()
 					}
 				}
 
-				// Upload to dps.report
 				{
 					auto& logs_for_dps = action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_DPS_REPORT)];
 
@@ -414,7 +411,6 @@ void LogsTable::draw_context_menu()
 					}
 				}
 
-				// Copy dps.report URLs
 				{
 					auto& logs_for_copy = action_logs[static_cast<size_t>(LogAction::COPY_DPS_REPORT_URLS)];
 
@@ -457,7 +453,6 @@ void LogsTable::draw_context_menu()
 					}
 				}
 
-				// Upload to Wingman
 				{
 					auto& logs_for_wingman = action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)];
 
@@ -499,7 +494,8 @@ void LogTableEntry::update_view()
 
 		view.time = std::format("{:%H:%M}", local_time);
 		view.name = encounter.name;
-		view.result = encounter.success ? "Success" : encounter.has_boss ? std::format("{:.2f}%", 100.f - encounter.health_percent_burned) : "Failure";
+		view.result = encounter.success ? "Success" : encounter.has_boss ? std::format("{:.2f}%", 100.f - encounter.health_percent_burned)
+		                                                                 : "Failure";
 
 		auto update_duration = [&]() {
 			auto minutes = encounter.duration_ms / (60 * 1000);
@@ -543,23 +539,18 @@ void LogTableEntry::refresh_time_ago()
 
 		std::string formatted_time = std::format("{:%d %B %Y, %H:%M:%S}", local_time);
 
-		// Format timestamp
 		std::ostringstream timestamp_stream;
 
 		timestamp_stream << formatted_time;
 
-		// Get the current time
 		auto now = std::chrono::system_clock::now();
 
-		// Calculate difference
 		auto diff = now - timepoint;
 
-		// Components of the difference
 		std::vector<std::pair<int64_t, std::string>> components = { { std::chrono::duration_cast<std::chrono::years>(diff).count(), "y" }, { std::chrono::duration_cast<std::chrono::months>(diff % std::chrono::years(1)).count(), "M" },
 			{ std::chrono::duration_cast<std::chrono::days>(diff % std::chrono::months(1)).count(), "d" }, { std::chrono::duration_cast<std::chrono::hours>(diff % std::chrono::days(1)).count(), "h" }, { std::chrono::duration_cast<std::chrono::minutes>(diff % std::chrono::hours(1)).count(), "m" },
 			{ std::chrono::duration_cast<std::chrono::seconds>(diff % std::chrono::minutes(1)).count(), "s" } };
 
-		// Build dynamic "X ago" string
 		std::ostringstream ago_stream;
 		bool first = true;
 		for (const auto& [value, unit] : components)
@@ -576,7 +567,6 @@ void LogTableEntry::refresh_time_ago()
 		else
 			ago_stream << "ago";
 
-		// Combine and return the result
 		return timestamp_stream.str() + " (" + ago_stream.str() + ")";
 	};
 

@@ -1,6 +1,6 @@
 #include "settings.h"
-#include "api.h"
 #include "logger.h"
+#include "platform.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -47,7 +47,7 @@ bool Settings::load()
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), LOGL_WARNING);
+		LOG("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }
@@ -74,7 +74,7 @@ bool Settings::save()
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), LOGL_WARNING);
+		LOG("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }

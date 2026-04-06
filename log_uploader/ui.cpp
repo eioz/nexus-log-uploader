@@ -1,5 +1,4 @@
 #include "ui.h"
-#include "api.h"
 #include "log_manager.h"
 #include "ui_elements.h"
 
@@ -29,7 +28,8 @@ IMPLEMENT_MODULE(UI, ui)
 		SAVE_SETTING(Setting);                                                   \
 	}
 
-void UI::initialize() {}
+void UI::initialize()
+{}
 
 void UI::render_windows() { logs_table.render(); }
 

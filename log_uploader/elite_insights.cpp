@@ -1,6 +1,6 @@
 #include "elite_insights.h"
-#include "api.h"
 #include "logger.h"
+#include "platform.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>
@@ -150,7 +150,8 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 			if (json.contains("isLegendaryCM"))
 				lcm = json.at("isLegendaryCM").get<bool>();
 
-			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
+			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE
+			                                                                                     : EncounterDifficulty::NORMAL_MODE;
 
 			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point {
 				std::istringstream ss(utc_time_str);
@@ -175,7 +176,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 					{
 						auto id = target.at("id").get<int>();
 
-						if (id == trigger_id) // main boss
+						if (id == trigger_id)
 						{
 							if (target.contains("healthPercentBurned"))
 								data.encounter.health_percent_burned = target.at("healthPercentBurned").get<float>();
@@ -235,7 +236,7 @@ void EliteInsights::install()
 
 	if (!settings.auto_update && installed)
 	{
-		LOG("Parser auto update disabled.", LOGL_DEBUG);
+		LOG("Parser auto update disabled.", LOGLEVEL_DEBUG);
 		this->installed.store(installed);
 		return;
 	}
@@ -247,9 +248,9 @@ void EliteInsights::install()
 		if (latest_version > local_version || !installed)
 		{
 			if (installed)
-				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), LOGL_DEBUG);
+				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), LOGLEVEL_DEBUG);
 			else
-				LOG("Installing Elite Insights " + latest_version.get_tag(), LOGL_DEBUG);
+				LOG("Installing Elite Insights " + latest_version.get_tag(), LOGLEVEL_DEBUG);
 
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
@@ -343,7 +344,7 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 
 			if (is_installed())
 			{
-				LOG("Installed Elite Insights " + local_version.get_tag(), LOGL_INFO);
+				LOG("Installed Elite Insights " + local_version.get_tag(), LOGLEVEL_INFO);
 				this->installed.store(true);
 				return;
 			}
@@ -352,14 +353,14 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 		}
 		else
 		{
-			LOG("Elite Insights is up to date: " + local_version.get_tag(), LOGL_DEBUG);
+			LOG("Elite Insights is up to date: " + local_version.get_tag(), LOGLEVEL_DEBUG);
 			this->installed.store(true);
 			return;
 		}
 	}
 	else
 	{
-		LOG("Failed to determine latest Elite Insights version", LOGL_WARNING);
+		LOG("Failed to determine latest Elite Insights version", LOGLEVEL_WARNING);
 
 		if (installed)
 			this->installed.store(true);
@@ -425,7 +426,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 		}
 		catch (const std::exception& e)
 		{
-			LOG("Failed to parse release information: " + std::string(e.what()), LOGL_WARNING);
+			LOG("Failed to parse release information: " + std::string(e.what()), LOGLEVEL_WARNING);
 		}
 
 		return version;
@@ -437,7 +438,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 
 		if (version_response.status_code != 200)
 		{
-			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGL_WARNING);
+			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGLEVEL_WARNING);
 			return version;
 		}
 

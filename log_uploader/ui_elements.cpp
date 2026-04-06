@@ -4,6 +4,8 @@
 #include "wingman_uploader.h"
 
 #include <imgui_internal.h>
+
+#include <algorithm>
 #include <unordered_map>
 
 #include <ShlObj.h>
@@ -185,25 +187,21 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 	Spacing();
 	if (Button("Select All"))
 	{
-		for (const auto& [main_category, sub_categories] : EncounterCategories)
+		for (const auto& category : EncounterCategories)
 		{
-			for (const auto& [sub_category, triggers] : sub_categories)
+			for (const auto& instance : category.instances)
 			{
-				for (const auto& trigger_id : triggers)
+				for (const auto& encounter : instance.encounters)
 				{
-					auto it = EncounterNames.find(trigger_id);
-					if (it != EncounterNames.end())
-					{
-						std::string trigger_name_lower = it->second;
-						std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
-						std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
+					std::string searchable_text = encounter.name + " " + category.name + " " + instance.name;
+					for (const auto& trigger : encounter.triggers)
+						searchable_text += " " + std::to_string(static_cast<int>(trigger));
+					std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
-						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
-
-						if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
-							if (std::find(value->begin(), value->end(), trigger_id) == value->end())
-								value->push_back(trigger_id);
-					}
+					if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
+						for (const auto& trigger : encounter.triggers)
+							if (std::find(value->begin(), value->end(), trigger) == value->end())
+								value->push_back(trigger);
 				}
 			}
 		}
@@ -212,24 +210,20 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 	SameLine();
 	if (Button("Deselect All"))
 	{
-		for (const auto& [main_category, sub_categories] : EncounterCategories)
+		for (const auto& category : EncounterCategories)
 		{
-			for (const auto& [sub_category, triggers] : sub_categories)
+			for (const auto& instance : category.instances)
 			{
-				for (const auto& trigger_id : triggers)
+				for (const auto& encounter : instance.encounters)
 				{
-					auto it = EncounterNames.find(trigger_id);
-					if (it != EncounterNames.end())
-					{
-						std::string trigger_name_lower = it->second;
-						std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
-						std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
+					std::string searchable_text = encounter.name + " " + category.name + " " + instance.name;
+					for (const auto& trigger : encounter.triggers)
+						searchable_text += " " + std::to_string(static_cast<int>(trigger));
+					std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
-						std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
-
-						if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
-							value->erase(std::remove(value->begin(), value->end(), trigger_id), value->end());
-					}
+					if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
+						for (const auto& trigger : encounter.triggers)
+							value->erase(std::remove(value->begin(), value->end(), trigger), value->end());
 				}
 			}
 		}
@@ -252,35 +246,30 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 
 	Spacing();
 
-	for (const auto& [main_category, sub_categories] : EncounterCategories)
+	for (const auto& category : EncounterCategories)
 	{
 		bool main_category_matches = false;
 
-		std::vector<std::pair<std::string, std::vector<TriggerID>>> filtered_subcategories;
+		std::vector<std::pair<std::string, std::vector<const EncounterDefinition*>>> filtered_instances;
 
-		for (const auto& [sub_category, triggers] : sub_categories)
+		for (const auto& instance : category.instances)
 		{
-			std::vector<TriggerID> filtered_triggers;
+			std::vector<const EncounterDefinition*> filtered_encounters;
 
-			for (const auto& trigger_id : triggers)
+			for (const auto& encounter : instance.encounters)
 			{
-				auto it = EncounterNames.find(trigger_id);
-				if (it != EncounterNames.end())
-				{
-					std::string trigger_name_lower = it->second;
-					std::string trigger_id_str = std::to_string(static_cast<int>(trigger_id));
-					std::string searchable_text = trigger_name_lower + " " + trigger_id_str + " " + main_category + " " + sub_category;
+				std::string searchable_text = encounter.name + " " + category.name + " " + instance.name;
+				for (const auto& trigger : encounter.triggers)
+					searchable_text += " " + std::to_string(static_cast<int>(trigger));
+				std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
 
-					std::transform(searchable_text.begin(), searchable_text.end(), searchable_text.begin(), [](unsigned char c) { return std::tolower(c); });
-
-					if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
-						filtered_triggers.push_back(trigger_id);
-				}
+				if (search_text_lower.empty() || searchable_text.find(search_text_lower) != std::string::npos)
+					filtered_encounters.push_back(&encounter);
 			}
 
-			if (!filtered_triggers.empty())
+			if (!filtered_encounters.empty())
 			{
-				filtered_subcategories.emplace_back(sub_category, filtered_triggers);
+				filtered_instances.emplace_back(instance.name, filtered_encounters);
 				main_category_matches = true;
 			}
 		}
@@ -295,41 +284,40 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 		else if (state.collapse_all)
 			SetNextItemOpen(false, ImGuiCond_Always);
 
-		if (CollapsingHeader(main_category.c_str(), ImGuiTreeNodeFlags_AllowItemOverlap))
+		if (CollapsingHeader(category.name.c_str(), ImGuiTreeNodeFlags_AllowItemOverlap))
 		{
 			Indent();
 
-			for (const auto& [sub_category, filtered_triggers] : filtered_subcategories)
+			for (const auto& [instance_name, filtered_encounters] : filtered_instances)
 			{
-				bool sub_category_open = state.expand_all || (state.expand_on_search_update && main_category_matches);
+				bool instance_open = state.expand_all || (state.expand_on_search_update && main_category_matches);
 
-				if (sub_category_open)
+				if (instance_open)
 					SetNextItemOpen(true, ImGuiCond_Always);
 				else if (state.collapse_all)
 					SetNextItemOpen(false, ImGuiCond_Always);
 
-				if (TreeNode(sub_category.c_str()))
+				if (TreeNode(instance_name.c_str()))
 				{
-					for (const auto& trigger_id : filtered_triggers)
+					for (const auto* encounter : filtered_encounters)
 					{
-						auto it = EncounterNames.find(trigger_id);
+						std::string checkbox_label = encounter->name + " (" + std::to_string(static_cast<int>(encounter->triggers.front())) + ")";
 
-						if (it == EncounterNames.end())
-							continue;
+						bool selected = std::all_of(encounter->triggers.begin(), encounter->triggers.end(),
+						    [&](const auto& t) { return std::find(value->begin(), value->end(), t) != value->end(); });
 
-						const std::string& name = it->second;
-						std::string checkbox_label = name + " (" + std::to_string(static_cast<int>(trigger_id)) + ")";
-
-						bool selected = std::find(value->begin(), value->end(), trigger_id) != value->end();
 						if (Checkbox(checkbox_label.c_str(), &selected))
 						{
-							if (selected)
+							for (const auto trigger : encounter->triggers)
 							{
-								if (std::find(value->begin(), value->end(), trigger_id) == value->end())
-									value->push_back(trigger_id);
+								if (selected)
+								{
+									if (std::find(value->begin(), value->end(), trigger) == value->end())
+										value->push_back(trigger);
+								}
+								else
+									value->erase(std::remove(value->begin(), value->end(), trigger), value->end());
 							}
-							else
-								value->erase(std::remove(value->begin(), value->end(), trigger_id), value->end());
 
 							r = true;
 						}

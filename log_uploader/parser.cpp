@@ -35,7 +35,7 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 	if (log->parser_data.status != ParseStatus::UNPARSED)
 	{
-		LOG("Log unavailable for parsing: " + log->id, LOGL_WARNING);
+		LOG("Log unavailable for parsing: " + log->id, LOGLEVEL_WARNING);
 		return;
 	}
 
@@ -50,7 +50,7 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 void Parser::run()
 {
-	LOG("Starting parser", LOGL_DEBUG);
+	LOG("Starting parser", LOGLEVEL_DEBUG);
 
 	try
 	{
@@ -58,7 +58,7 @@ void Parser::run()
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to install Elite Insights: " + std::string(e.what()), LOGL_CRITICAL);
+		LOG("Failed to install Elite Insights: " + std::string(e.what()), LOGLEVEL_CRITICAL);
 		return;
 	}
 
@@ -104,7 +104,7 @@ void Parser::run()
 			std::unique_lock lock(log->mutex);
 			log->parser_data.status = ParseStatus::FAILED;
 			log->parser_data.error_message = e.what();
-			LOG("Failed to parse log with Elite Insights: " + log->id + " Exception: " + e.what(), LOGL_WARNING);
+			LOG("Failed to parse log with Elite Insights: " + log->id + " Exception: " + e.what(), LOGLEVEL_WARNING);
 			log->update_view();
 		}
 	}

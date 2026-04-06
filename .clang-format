@@ -20,7 +20,7 @@ BraceWrapping:
   SplitEmptyRecord: false
   SplitEmptyNamespace: false
 PointerAlignment: Left
-ColumnLimit: 300
+ColumnLimit: 0
 AccessModifierOffset: -4
 AllowShortFunctionsOnASingleLine: All
 AllowShortLambdasOnASingleLine: All

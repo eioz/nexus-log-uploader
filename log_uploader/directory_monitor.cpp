@@ -1,7 +1,7 @@
 #include "directory_monitor.h"
-#include "api.h"
 #include "log_manager.h"
 #include "logger.h"
+#include "platform.h"
 
 #include <ShlObj.h>
 #include <deque>
@@ -11,34 +11,9 @@ IMPLEMENT_MODULE(DirectoryMonitor, directory_monitor)
 
 void DirectoryMonitor::initialize()
 {
-	auto arcdps_ini_path = std::filesystem::path(addon::api->Paths_GetAddonDirectory("arcdps")) / "arcdps.ini";
+	monitor_directory = addon::get_log_directory();
 
-	auto use_default_path = false;
-
-	if (std::filesystem::exists(arcdps_ini_path))
-	{
-		try
-		{
-			wchar_t buffer[MAX_PATH] = {};
-			GetPrivateProfileStringW(L"session", L"boss_encounter_path", L"", buffer, MAX_PATH, arcdps_ini_path.wstring().c_str());
-
-			std::wstring boss_path(buffer);
-
-			if (!boss_path.empty())
-			{
-				monitor_directory = std::filesystem::path(boss_path) / "arcdps.cbtlogs";
-				use_default_path = monitor_directory.empty();
-			}
-			else
-				throw std::exception("Failed to read boss_encounter_path from arcdps.ini");
-		}
-		catch (std::exception& e)
-		{
-			LOG(e.what(), LOGL_WARNING);
-		}
-	}
-
-	if (use_default_path || monitor_directory.empty())
+	if (monitor_directory.empty())
 	{
 		try
 		{
@@ -68,13 +43,15 @@ void DirectoryMonitor::initialize()
 		}
 		catch (std::exception& e)
 		{
-			LOG("Failed to initialize directory monitor:" + std::string(e.what()), LOGL_CRITICAL);
+			LOG("Failed to initialize directory monitor:" + std::string(e.what()), LOGLEVEL_CRITICAL);
 			initialized.store(false);
 			return;
 		}
 	}
 
 	initialized.store(true);
+
+	LOG("Monitoring directory: " + monitor_directory.string(), LOGLEVEL_INFO);
 
 	this->monitor_thread = std::thread(&DirectoryMonitor::run, this);
 }
@@ -96,13 +73,16 @@ void DirectoryMonitor::release()
 void DirectoryMonitor::run()
 {
 	if (monitor_directory.empty() || !std::filesystem::exists(monitor_directory))
+	{
+		LOG("Directory monitor not started: path does not exist: " + monitor_directory.string(), LOGLEVEL_WARNING);
 		return;
+	}
 
 	auto directory_handle = CreateFileW(monitor_directory.c_str(), FILE_LIST_DIRECTORY, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED, nullptr);
 
 	if (directory_handle == INVALID_HANDLE_VALUE)
 	{
-		LOG("Failed to get directory handle", LOGL_CRITICAL);
+		LOG("Failed to get directory handle", LOGLEVEL_CRITICAL);
 		return;
 	}
 
@@ -113,12 +93,12 @@ void DirectoryMonitor::run()
 
 	if (monitor_overlapped.hEvent == NULL)
 	{
-		LOG("Failed to create event", LOGL_CRITICAL);
+		LOG("Failed to create event", LOGLEVEL_CRITICAL);
 		CloseHandle(directory_handle);
 		return;
 	}
 
-	LOG("Started monitoring: " + monitor_directory.string(), LOGL_DEBUG);
+	LOG("Started monitoring: " + monitor_directory.string(), LOGLEVEL_DEBUG);
 
 	while (true)
 	{
@@ -126,7 +106,7 @@ void DirectoryMonitor::run()
 
 		if (!result && GetLastError() != ERROR_IO_PENDING)
 		{
-			LOG("Failed to read directory changes", LOGL_CRITICAL);
+			LOG("Failed to read directory changes", LOGLEVEL_CRITICAL);
 			break;
 		}
 
@@ -165,7 +145,7 @@ void DirectoryMonitor::run()
 
 								auto log_available = is_file_openable(file_path);
 
-								for (auto cooldown = 1; !log_available && cooldown < 150; ++cooldown) // (cooldown*(cooldown+1))/2 = ~11.3ms ?
+								for (auto cooldown = 1; !log_available && cooldown < 150; ++cooldown)
 								{
 									std::this_thread::sleep_for(std::chrono::milliseconds(cooldown));
 									log_available = is_file_openable(file_path);
@@ -173,12 +153,12 @@ void DirectoryMonitor::run()
 
 								if (log_available)
 								{
-									LOG("New evtc file detected: " + file_path.string(), LOGL_DEBUG);
+									LOG("New evtc file detected: " + file_path.string(), LOGLEVEL_DEBUG);
 
 									addon::log_manager->add_log(file_path);
 								}
 								else
-									LOG("Evtc file unavailable: " + file_path.string(), LOGL_WARNING);
+									LOG("Evtc file unavailable: " + file_path.string(), LOGLEVEL_WARNING);
 							}
 						}
 					}
@@ -190,7 +170,7 @@ void DirectoryMonitor::run()
 		}
 		else if (wait_result == WAIT_FAILED)
 		{
-			LOG("WaitForSingleObject failed", LOGL_CRITICAL);
+			LOG("WaitForSingleObject failed", LOGLEVEL_CRITICAL);
 			break;
 		}
 	}
@@ -204,5 +184,5 @@ void DirectoryMonitor::run()
 	if (directory_handle != INVALID_HANDLE_VALUE)
 		CloseHandle(directory_handle);
 
-	LOG("Directory monitor stopped", LOGL_DEBUG);
+	LOG("Directory monitor stopped", LOGLEVEL_DEBUG);
 }

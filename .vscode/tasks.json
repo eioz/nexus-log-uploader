@@ -20,7 +20,10 @@
       "label": "Build Debug x64",
       "type": "shell",
       "command": ".\\build.ps1 -Config Debug",
-      "group": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
       "presentation": {
         "reveal": "always",
         "panel": "shared",
@@ -50,6 +53,26 @@
         "panel": "shared",
         "clear": true
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build Mock Debug x64",
+      "type": "shell",
+      "command": ".\\nexus-mock\\build.ps1 -Config Debug",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Build Debug + Mock",
+      "dependsOn": [
+        "Build Debug x64",
+        "Build Mock Debug x64"
+      ],
+      "dependsOrder": "sequence",
+      "group": "build",
       "problemMatcher": []
     },
     {
