@@ -20,10 +20,12 @@ enum class TriggerID : uint16_t
 	SabethaTheSaboteur = 15375,
 	// Salvation Pass
 	Slothasor = 16123,
-	BanditTrio = 16088,
+	Berg = 16088,
+	Zane = 16137,
+	Narella = 16125,
 	MatthiasGabrel = 16115,
 	// Stronghold of the Faithful
-	SiegeTheStronghold = 16253,
+	McLeodTheSilent = 16253,
 	KeepConstruct = 16235,
 	TwistedCastle = 16247,
 	Xera = 16246,
@@ -35,23 +37,57 @@ enum class TriggerID : uint16_t
 	// Hall of Chains
 	SoullessHorror = 19767,
 	RiverOfSouls = 19828,
-	StatueOfIce = 19691,      // broken king
-	StatueOfDarkness = 19844, // eyes
-	StatueOfDeath = 19536,    // eater of souls
+	BrokenKing = 19691,
+	EaterOfSouls = 19536,
+	EyeOfJudgment = 19651,
+	EyeOfFate = 19844,
 	Dhuum = 19450,
 	// Mythwright Gambit
 	ConjuredAmalgamate = 43974,
-	TwinLargos = 21105,
+	Nikare = 21105,
+	Kenut = 21089,
 	Qadim = 20934,
 	// The Key of Ahdashim
 	CardinalAdina = 22006,
 	CardinalSabir = 21964,
 	QadimThePeerless = 22000,
 	// Mount Balrior
+	GreerTheBlightbringer = 26725,
 	DecimaTheStormsinger = 26774,
 	GodsquallDecima = 26867,
-	GreerTheBlightbringer = 26725,
 	UraTheSteamshrieker = 26712,
+	// Core
+	PrototypeVermilion = 25413,
+	PrototypeVermilionCM = 25414,
+	PrototypeArsenite = 25415,
+	PrototypeIndigo = 25419,
+	// The Icebrood Saga
+	IcebroodConstruct = 22154,
+	VoiceOfTheFallen = 22343,
+	ClawOfTheFallen = 22481,
+	VoiceAndClaw = 22315,
+	FraenirOfJormag = 22492,
+	IcebroodConstructSanctum = 22436,
+	Boneskinner = 22521,
+	WhisperOfJormag = 22711,
+	// End of Dragons
+	MaiTrin = 24033,
+	EchoOfScarletBriar = 24768,
+	Ankka = 23957,
+	MinisterLi = 24485,
+	MinisterLiCM = 24266,
+	TheRitualist = 23618,
+	TheMindblade = 24254,
+	TheEnforcer = 24261,
+	TheSniper = 23612,
+	TheMechRider = 24660,
+	TheDragonvoid = 43488,
+	VoidAmalgamate = 23956,
+	// Secrets of the Obscure
+	Dagda = 25705,
+	Cerus = 25989,
+	// Visions of Eternity
+	KelaSeneschalOfWaves = 27124,
 
 	// Fractals
 	// Nightmare
@@ -69,26 +105,6 @@ enum class TriggerID : uint16_t
 	KanaxaiChallengeMode = 25577,
 	// Lonely Tower
 	Eparch = 26231,
-
-	// Strike Missions
-	// Core
-	OldLionsCourt = 25413,
-	OldLionsCourtChallengeMode = 25414,
-	// The Icebrood Saga
-	IcebroodConstruct = 22154,
-	SuperKodanBrothers = 22343,
-	FraenirOfJormag = 22492,
-	Boneskinner = 22521,
-	WhisperOfJormag = 22711,
-	// End of Dragons
-	AetherbladeHideout = 24033,
-	XunlaiJadeJunkyard = 23957,
-	KainengOverlook = 24485,
-	KainengOverlookChallengeMode = 24266,
-	HarvestTemple = 43488,
-	// Secrets of the Obscure
-	CosmicObservatory = 25705,
-	TempleOfFebe = 25989,
 
 	// Other
 	// Convergences
@@ -112,140 +128,154 @@ enum class TriggerID : uint16_t
 	HeartsAndMinds = 15884,
 };
 
-inline const std::map<TriggerID, std::string> EncounterNames = {
-	// World vs World
-	{ TriggerID::WorldVsWorld, "World vs. World" },
-
-	// Raids
-	// Spirit Vale
-	{ TriggerID::ValeGuardian, "Vale Guardian" },
-	{ TriggerID::Gorseval, "Gorseval" },
-	{ TriggerID::SpiritRace, "Spirit Race" },
-	{ TriggerID::SabethaTheSaboteur, "Sabetha the Saboteur" },
-	// Salvation Pass
-	{ TriggerID::Slothasor, "Slothasor" },
-	{ TriggerID::BanditTrio, "Bandit Trio" },
-	{ TriggerID::MatthiasGabrel, "Matthias Gabrel" },
-	// Stronghold of the Faithful
-	{ TriggerID::SiegeTheStronghold, "Siege the Stronghold" },
-	{ TriggerID::KeepConstruct, "Keep Construct" },
-	{ TriggerID::TwistedCastle, "Twisted Castle" },
-	{ TriggerID::Xera, "Xera" },
-	// Bastion of the Penitent
-	{ TriggerID::CairnTheIndomitable, "Cairn the Indomitable" },
-	{ TriggerID::MursaatOverseer, "Mursaat Overseer" },
-	{ TriggerID::Samarog, "Samarog" },
-	{ TriggerID::Deimos, "Deimos" },
-	// Hall of Chains
-	{ TriggerID::SoullessHorror, "Soulless Horror" },
-	{ TriggerID::RiverOfSouls, "River of Souls" },
-	{ TriggerID::StatueOfIce, "Statue of Ice" },
-	{ TriggerID::StatueOfDarkness, "Statue of Darkness" },
-	{ TriggerID::StatueOfDeath, "Statue of Death" },
-	{ TriggerID::Dhuum, "Dhuum" },
-	// Mythwright Gambit
-	{ TriggerID::ConjuredAmalgamate, "Conjured Amalgamate" },
-	{ TriggerID::TwinLargos, "Twin Largos" },
-	{ TriggerID::Qadim, "Qadim" },
-	// The Key of Ahdashim
-	{ TriggerID::CardinalAdina, "Cardinal Adina" },
-	{ TriggerID::CardinalSabir, "Cardinal Sabir" },
-	{ TriggerID::QadimThePeerless, "Qadim the Peerless" },
-	// Mount Balrior
-	{ TriggerID::DecimaTheStormsinger, "Decima, the Stormsinger" },
-	{ TriggerID::GodsquallDecima, "Godsquall Decima" },
-	{ TriggerID::GreerTheBlightbringer, "Greer, the Blightbringer" },
-	{ TriggerID::UraTheSteamshrieker, "Ura, the Steamshrieker" },
-
-	// Fractals
-	// Nightmare
-	{ TriggerID::MAMA, "MAMA" },
-	{ TriggerID::SiaxTheCorrupted, "Siax the Corrupted" },
-	{ TriggerID::EnsolyssOfTheEndlessTorment, "Ensolyss of the Endless Torment" },
-	// Shattered Observatory
-	{ TriggerID::SkorvaldTheShattered, "Skorvald the Shattered" },
-	{ TriggerID::Artsariiv, "Artsariiv" },
-	{ TriggerID::Arkk, "Arkk" },
-	// Sunqua Peak
-	{ TriggerID::AiKeeperOfThePeak, "Ai, Keeper of the Peak" },
-	// Silent Surf
-	{ TriggerID::Kanaxai, "Kanaxai" },
-	{ TriggerID::KanaxaiChallengeMode, "Kanaxai CM" },
-	// Lonely Tower
-	{ TriggerID::Eparch, "Eparch" },
-
-	// Strike Missions
-	// Core
-	{ TriggerID::OldLionsCourt, "Old Lion's Court" },
-	{ TriggerID::OldLionsCourtChallengeMode, "Old Lion's Court CM" },
-	// The Icebrood Saga
-	{ TriggerID::IcebroodConstruct, "Icebrood Construct" },
-	{ TriggerID::SuperKodanBrothers, "Super Kodan Brothers" },
-	{ TriggerID::FraenirOfJormag, "Fraenir of Jormag" },
-	{ TriggerID::Boneskinner, "Boneskinner" },
-	{ TriggerID::WhisperOfJormag, "Whisper of Jormag" },
-	// End of Dragons
-	{ TriggerID::AetherbladeHideout, "Aetherblade Hideout" },
-	{ TriggerID::XunlaiJadeJunkyard, "Xunlai Jade Junkyard" },
-	{ TriggerID::KainengOverlook, "Kaineng Overlook" },
-	{ TriggerID::KainengOverlookChallengeMode, "Kaineng Overlook CM" },
-	{ TriggerID::HarvestTemple, "Harvest Temple" },
-	// Secrets of the Obscure
-	{ TriggerID::CosmicObservatory, "Cosmic Observatory" },
-	{ TriggerID::TempleOfFebe, "Temple of Febe" },
-
-	// Other
-	//  Convergences
-	{ TriggerID::DemonKnight, "Demon Knight" },
-	{ TriggerID::Sorrow, "Sorrow" },
-	{ TriggerID::Dreadwing, "Dreadwing" },
-	{ TriggerID::HellSister, "Hell Sister" },
-	{ TriggerID::Umbriel, "Umbriel, Halberd of House Aurkus" },
-
-	// Special Forces Training Area
-	{ TriggerID::StandardKittyGolem, "Standard Kitty Golem" },
-	{ TriggerID::MediumKittyGolem, "Medium Kitty Golem" },
-	{ TriggerID::LargeKittyGolem, "Large Kitty Golem" },
-
-	// Open World
-	{ TriggerID::SooWon, "Soo-Won" },
-
-	// Uncategorized
-	{ TriggerID::Freezie, "Freezie" },
-	{ TriggerID::DregShark, "Dreg Shark" },
-	{ TriggerID::HeartsAndMinds, "Hearts and Minds" },
+struct EncounterDefinition
+{
+	std::string name;
+	std::vector<TriggerID> triggers;
 };
 
-inline const std::vector<std::pair<std::string, std::vector<std::pair<std::string, std::vector<TriggerID>>>>> EncounterCategories = {
-	{ "Raids",
-	    {
-	        { "Spirit Vale", { TriggerID::ValeGuardian, TriggerID::SpiritRace, TriggerID::Gorseval, TriggerID::SabethaTheSaboteur } }, { "Salvation Pass", { TriggerID::Slothasor, TriggerID::BanditTrio, TriggerID::MatthiasGabrel } },
-	        { "Stronghold of the Faithful", { TriggerID::SiegeTheStronghold, TriggerID::KeepConstruct, TriggerID::TwistedCastle, TriggerID::Xera } }, { "Bastion of the Penitent", { TriggerID::CairnTheIndomitable, TriggerID::MursaatOverseer, TriggerID::Samarog, TriggerID::Deimos } },
-	        { "Hall of Chains", { TriggerID::SoullessHorror, TriggerID::RiverOfSouls, TriggerID::StatueOfIce, TriggerID::StatueOfDarkness, TriggerID::StatueOfDeath, TriggerID::Dhuum } }, { "Mythwright Gambit", { TriggerID::ConjuredAmalgamate, TriggerID::TwinLargos, TriggerID::Qadim } },
-	        { "The Key of Ahdashim", { TriggerID::CardinalAdina, TriggerID::CardinalSabir, TriggerID::QadimThePeerless } }, { "Mount Balrior", { TriggerID::GreerTheBlightbringer, TriggerID::DecimaTheStormsinger, TriggerID::GodsquallDecima, TriggerID::UraTheSteamshrieker } },
-	        { "", {} } // todo: add kela
-	    } },
-	{ "Fractals",
-	    {
-	        { "Nightmare", { TriggerID::MAMA, TriggerID::SiaxTheCorrupted, TriggerID::EnsolyssOfTheEndlessTorment } },
-	        { "Shattered Observatory", { TriggerID::SkorvaldTheShattered, TriggerID::Artsariiv, TriggerID::Arkk } },
-	        { "Sunqua Peak", { TriggerID::AiKeeperOfThePeak } },
-	        { "Silent Surf", { TriggerID::Kanaxai, TriggerID::KanaxaiChallengeMode } },
-	        { "Lonely Tower", { TriggerID::Eparch } },
-	    } },
-	{ "Strike Missions",
-	    {
-	        { "Core", { TriggerID::OldLionsCourt, TriggerID::OldLionsCourtChallengeMode } },
-	        { "The Icebrood Saga", { TriggerID::IcebroodConstruct, TriggerID::SuperKodanBrothers, TriggerID::FraenirOfJormag, TriggerID::Boneskinner, TriggerID::WhisperOfJormag } },
-	        { "End of Dragons", { TriggerID::AetherbladeHideout, TriggerID::XunlaiJadeJunkyard, TriggerID::KainengOverlook, TriggerID::KainengOverlookChallengeMode, TriggerID::HarvestTemple } },
-	        { "Secrets of the Obscure", { TriggerID::CosmicObservatory, TriggerID::TempleOfFebe } },
-	    } },
-	{ "Other",
-	    {
-	        { "Convergences", { TriggerID::DemonKnight, TriggerID::Sorrow, TriggerID::Dreadwing, TriggerID::HellSister, TriggerID::Umbriel } },
-	        { "Special Forces Training Area", { TriggerID::StandardKittyGolem, TriggerID::MediumKittyGolem, TriggerID::LargeKittyGolem } },
-	        { "World vs World", { TriggerID::WorldVsWorld } },
-	        { "Open World", { TriggerID::SooWon } },
-	        { "Uncategorized", { TriggerID::Freezie, TriggerID::DregShark, TriggerID::HeartsAndMinds } },
-	    } },
+struct EncounterInstance
+{
+	std::string name;
+	std::vector<EncounterDefinition> encounters;
 };
+
+struct EncounterCategory
+{
+	std::string name;
+	std::vector<EncounterInstance> instances;
+};
+
+// clang-format off
+inline const std::vector<EncounterCategory> EncounterCategories = {
+  { "Raids", {
+    { "Spirit Vale", {
+      { "Vale Guardian", { TriggerID::ValeGuardian } },
+      { "Spirit Woods", { TriggerID::SpiritRace } },
+      { "Gorseval", { TriggerID::Gorseval } },
+      { "Sabetha the Saboteur", { TriggerID::SabethaTheSaboteur } },
+    } },
+    { "Salvation Pass", {
+      { "Slothasor", { TriggerID::Slothasor } },
+      { "Bandit Trio", { TriggerID::Berg, TriggerID::Zane, TriggerID::Narella } },
+      { "Matthias Gabrel", { TriggerID::MatthiasGabrel } },
+    } },
+    { "Stronghold of the Faithful", {
+      { "Siege the Stronghold", { TriggerID::McLeodTheSilent } },
+      { "Keep Construct", { TriggerID::KeepConstruct } },
+      { "Twisted Castle", { TriggerID::TwistedCastle } },
+      { "Xera", { TriggerID::Xera } },
+    } },
+    { "Bastion of the Penitent", {
+      { "Cairn the Indomitable", { TriggerID::CairnTheIndomitable } },
+      { "Mursaat Overseer", { TriggerID::MursaatOverseer } },
+      { "Samarog", { TriggerID::Samarog } },
+      { "Deimos", { TriggerID::Deimos } },
+    } },
+    { "Hall of Chains", {
+      { "Soulless Horror", { TriggerID::SoullessHorror } },
+      { "River of Souls", { TriggerID::RiverOfSouls } },
+      { "Broken King", { TriggerID::BrokenKing } },
+      { "Eater of Souls", { TriggerID::EaterOfSouls } },
+      { "Statue of Darkness", { TriggerID::EyeOfFate, TriggerID::EyeOfJudgment } },
+      { "Dhuum", { TriggerID::Dhuum } },
+    } },
+    { "Mythwright Gambit", {
+      { "Conjured Amalgamate", { TriggerID::ConjuredAmalgamate } },
+      { "Twin Largos", { TriggerID::Nikare, TriggerID::Kenut } },
+      { "Qadim", { TriggerID::Qadim } },
+    } },
+    { "The Key of Ahdashim", {
+      { "Cardinal Adina", { TriggerID::CardinalAdina } },
+      { "Cardinal Sabir", { TriggerID::CardinalSabir } },
+      { "Qadim the Peerless", { TriggerID::QadimThePeerless } },
+    } },
+    { "Mount Balrior", {
+      { "Greer, the Blightbringer", { TriggerID::GreerTheBlightbringer } },
+      { "Decima, the Stormsinger", { TriggerID::DecimaTheStormsinger, TriggerID::GodsquallDecima } },
+      { "Ura, the Steamshrieker", { TriggerID::UraTheSteamshrieker } },
+    } },
+  } },
+  { "Raids (Strike Missions)", {
+    { "Core", {
+      { "Old Lion's Court", { TriggerID::PrototypeVermilion, TriggerID::PrototypeVermilionCM, TriggerID::PrototypeArsenite, TriggerID::PrototypeIndigo } },
+    } },
+    { "The Icebrood Saga", {
+      { "Shiverpeaks Pass", { TriggerID::IcebroodConstruct } },
+      { "Voice of the Fallen and Claw of the Fallen", { TriggerID::VoiceOfTheFallen, TriggerID::ClawOfTheFallen, TriggerID::VoiceAndClaw } },
+      { "Fraenir of Jormag", { TriggerID::FraenirOfJormag, TriggerID::IcebroodConstructSanctum } },
+      { "Boneskinner", { TriggerID::Boneskinner } },
+      { "Whisper of Jormag", { TriggerID::WhisperOfJormag } },
+    } },
+    { "End of Dragons", {
+      { "Aetherblade Hideout", { TriggerID::MaiTrin, TriggerID::EchoOfScarletBriar } },
+      { "Xunlai Jade Junkyard", { TriggerID::Ankka } },
+      { "Kaineng Overlook", { TriggerID::MinisterLi, TriggerID::MinisterLiCM, TriggerID::TheRitualist, TriggerID::TheMindblade, TriggerID::TheEnforcer, TriggerID::TheSniper, TriggerID::TheMechRider } },
+      { "Harvest Temple", { TriggerID::TheDragonvoid, TriggerID::VoidAmalgamate } },
+    } },
+    { "Secrets of the Obscure", {
+      { "Cosmic Observatory", { TriggerID::Dagda } },
+      { "Temple of Febe", { TriggerID::Cerus } },
+    } },
+    { "Visions of Eternity", {
+      { "Guardian's Glade", { TriggerID::KelaSeneschalOfWaves } },
+    } },
+  } },
+  { "Fractals", {
+    { "Nightmare", {
+      { "MAMA", { TriggerID::MAMA } },
+      { "Siax the Corrupted", { TriggerID::SiaxTheCorrupted } },
+      { "Ensolyss of the Endless Torment", { TriggerID::EnsolyssOfTheEndlessTorment } },
+    } },
+    { "Shattered Observatory", {
+      { "Skorvald the Shattered", { TriggerID::SkorvaldTheShattered } },
+      { "Artsariiv", { TriggerID::Artsariiv } },
+      { "Arkk", { TriggerID::Arkk } },
+    } },
+    { "Sunqua Peak", {
+      { "Ai, Keeper of the Peak", { TriggerID::AiKeeperOfThePeak } },
+    } },
+    { "Silent Surf", {
+      { "Kanaxai", { TriggerID::Kanaxai, TriggerID::KanaxaiChallengeMode } },
+    } },
+    { "Lonely Tower", {
+      { "Eparch", { TriggerID::Eparch } },
+    } },
+  } },
+  { "Other", {
+    { "Convergences", {
+      { "Demon Knight", { TriggerID::DemonKnight } },
+      { "Sorrow", { TriggerID::Sorrow } },
+      { "Dreadwing", { TriggerID::Dreadwing } },
+      { "Hell Sister", { TriggerID::HellSister } },
+      { "Umbriel, Halberd of House Aurkus", { TriggerID::Umbriel } },
+    } },
+    { "Special Forces Training Area", {
+      { "Standard Kitty Golem", { TriggerID::StandardKittyGolem } },
+      { "Medium Kitty Golem", { TriggerID::MediumKittyGolem } },
+      { "Large Kitty Golem", { TriggerID::LargeKittyGolem } },
+    } },
+    { "World vs World", {
+      { "World vs. World", { TriggerID::WorldVsWorld } },
+    } },
+    { "Open World", {
+      { "Soo-Won", { TriggerID::SooWon } },
+    } },
+    { "Uncategorized", {
+      { "Freezie", { TriggerID::Freezie } },
+      { "Dreg Shark", { TriggerID::DregShark } },
+      { "Hearts and Minds", { TriggerID::HeartsAndMinds } },
+    } },
+  } },
+};
+// clang-format on
+
+inline const std::map<TriggerID, std::string> EncounterNames = []() {
+	std::map<TriggerID, std::string> result;
+	for (const auto& category : EncounterCategories)
+		for (const auto& instance : category.instances)
+			for (const auto& encounter : instance.encounters)
+				for (const auto& trigger : encounter.triggers)
+					result.emplace(trigger, encounter.name);
+	return result;
+}();
