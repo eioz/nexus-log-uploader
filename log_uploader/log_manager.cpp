@@ -1,8 +1,8 @@
 #include "log_manager.h"
 #include "dps_report_uploader.h"
 #include "evtc_parser.h"
-#include "logger.h"
 #include "parser.h"
+#include "platform.h"
 #include "ui.h"
 #include "wingman_uploader.h"
 
@@ -12,27 +12,31 @@ IMPLEMENT_MODULE(LogManager, log_manager)
 
 LogManager::~LogManager()
 {
-	std::unique_lock lock(logs_mutex);
-
-	for (auto& log : logs)
+	try
 	{
-		std::unique_lock log_lock(log->mutex);
+		std::unique_lock lock(logs_mutex);
 
-		if (log->parser_data.status == ParseStatus::PARSED)
+		for (auto& log : logs)
 		{
-			LOG("Deleting " + log->parser_data.html_file_path.string(), LOGLEVEL_DEBUG);
+			std::unique_lock log_lock(log->mutex);
 
-			if (std::filesystem::exists(log->parser_data.html_file_path))
-				std::filesystem::remove(log->parser_data.html_file_path);
+			if (log->parser_data.status == ParseStatus::PARSED)
+			{
+				std::error_code ec;
 
-			LOG("Deleting " + log->parser_data.json_file_path.string(), LOGLEVEL_DEBUG);
+				if (std::filesystem::exists(log->parser_data.html_file_path, ec))
+					std::filesystem::remove(log->parser_data.html_file_path, ec);
 
-			if (std::filesystem::exists(log->parser_data.json_file_path))
-				std::filesystem::remove(log->parser_data.json_file_path);
+				if (std::filesystem::exists(log->parser_data.json_file_path, ec))
+					std::filesystem::remove(log->parser_data.json_file_path, ec);
+			}
 		}
-	}
 
-	logs.clear();
+		logs.clear();
+	}
+	catch (...)
+	{
+	}
 }
 
 void LogManager::add_log(std::filesystem::path evtc_file_path)
@@ -52,18 +56,18 @@ void LogManager::add_log(std::filesystem::path evtc_file_path)
 
 			addon::dps_report_uploader->process_auto_upload(log);
 
-			if (GET_SETTING(parser.auto_parse))
+			if (addon::settings->get().parser.auto_parse)
 				addon::parser->add_log(log);
 
 			addon::ui->logs_table.add_log(log);
 
-			LOG("Log added: " + log->id, LOGLEVEL_INFO);
+			addon::log("Log added: " + log->id, LOGLEVEL_INFO);
 		}
 		else
-			throw std::exception("Invalid evtc data");
+			throw std::runtime_error("Invalid evtc data");
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to add log: Evtc parsing failed. File: \"" + evtc_file_path.string() + "\" Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to add log: Evtc parsing failed. File: \"" + evtc_file_path.string() + "\" Exception: " + e.what(), LOGLEVEL_WARNING);
 	}
 }

@@ -1,8 +1,9 @@
 #include "evtc_parser.h"
-#include "logger.h"
+#include "platform.h"
 
 #include <miniz/miniz.h>
 
+#include <cstring>
 #include <fstream>
 
 IMPLEMENT_MODULE(EVTCParser, evtc_parser)
@@ -83,7 +84,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 	index += 1; // revision
 	index += 4; // unknown/reserved
 
-	data.trigger_id = *reinterpret_cast<TriggerID*>(file_data.data() + index);
+	std::memcpy(&data.trigger_id, file_data.data() + index, sizeof(TriggerID));
 	index += sizeof(TriggerID);
 
 	return data;

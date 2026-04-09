@@ -42,7 +42,8 @@ using LogFn = void (*)(LogLevel, const char*);
 using IniPathFn = std::filesystem::path (*)();
 
 void init_platform(Platform p, LogFn log_fn, IniPathFn ini_path_fn);
-void log(LogLevel level, const char* message);
+void log(const std::string& message, LogLevel level);
+void log(const char* message, LogLevel level);
 std::filesystem::path get_arcdps_ini_path();
 std::filesystem::path get_log_directory();
 } // namespace addon

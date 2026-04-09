@@ -15,7 +15,7 @@ void LogsTable::render()
 
 	update_logs();
 
-	auto display_settings = GET_SETTING(display.log_table);
+	auto display_settings = addon::settings->get().display.log_table;
 
 	auto open = this->open;
 

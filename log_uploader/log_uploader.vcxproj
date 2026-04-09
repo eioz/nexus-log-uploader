@@ -162,7 +162,6 @@
     <ClCompile Include="elite_insights.cpp" />
     <ClCompile Include="evtc_parser.cpp" />
     <ClCompile Include="log.cpp" />
-    <ClCompile Include="logger.cpp" />
     <ClCompile Include="logs_table.cpp" />
     <ClCompile Include="log_manager.cpp" />
     <ClCompile Include="settings.cpp" />
@@ -181,7 +180,6 @@
     <ClInclude Include="elite_insights.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="evtc_parser.h" />
-    <ClInclude Include="logger.h" />
     <ClInclude Include="logs_table.h" />
     <ClInclude Include="log_manager.h" />
     <ClInclude Include="module.h" />

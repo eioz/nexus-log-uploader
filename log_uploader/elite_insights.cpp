@@ -1,5 +1,4 @@
 #include "elite_insights.h"
-#include "logger.h"
 #include "platform.h"
 #include "settings.h"
 
@@ -18,6 +17,26 @@
 #define GITHUB_RELEASES_URL std::string("https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/")
 #define WINGMAN_VERSION_URL std::string("https://gw2wingman.nevermindcreations.de/api/EIversion")
 
+namespace {
+struct HandleGuard
+{
+	HANDLE handle = INVALID_HANDLE_VALUE;
+	HandleGuard() = default;
+	explicit HandleGuard(HANDLE h) : handle(h) {}
+	~HandleGuard() { close(); }
+	HandleGuard(const HandleGuard&) = delete;
+	HandleGuard& operator=(const HandleGuard&) = delete;
+	void close()
+	{
+		if (handle != INVALID_HANDLE_VALUE && handle != nullptr)
+		{
+			CloseHandle(handle);
+			handle = INVALID_HANDLE_VALUE;
+		}
+	}
+};
+} // namespace
+
 ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 {
 	ParserData data;
@@ -35,68 +54,49 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 	}
 
 	SECURITY_ATTRIBUTES sa = { sizeof(sa), NULL, TRUE };
-	HANDLE read_pipe, write_pipe;
-
-	if (!CreatePipe(&read_pipe, &write_pipe, &sa, 0))
-	{
+	HANDLE r, w;
+	if (!CreatePipe(&r, &w, &sa, 0))
 		throw std::runtime_error("Failed to create read/write pipe");
-	}
+	HandleGuard read_pipe(r), write_pipe(w);
 
-	STARTUPINFOA si = {};
+	STARTUPINFOW si = {};
 	PROCESS_INFORMATION pi = {};
 	si.cb = sizeof(si);
 	si.dwFlags |= STARTF_USESTDHANDLES;
-	si.hStdOutput = write_pipe;
-	si.hStdError = write_pipe;
+	si.hStdOutput = write_pipe.handle;
+	si.hStdError = write_pipe.handle;
 
 	if (!std::filesystem::exists(output_directory))
-	{
 		if (!std::filesystem::create_directories(output_directory))
-		{
-			CloseHandle(read_pipe);
-			CloseHandle(write_pipe);
 			throw std::runtime_error("Failed to create Elite Insights output directory: " + output_directory.string());
-		}
-	}
 
-	auto command = "\"" + executable_file.string() + "\" -c \"" + settings_file.string() + "\" \"" + evtc_file_path.string() + "\"";
-	std::vector<char> command_buffer(command.begin(), command.end());
-	command_buffer.push_back('\0');
+	auto command = L"\"" + executable_file.wstring() + L"\" -c \"" + settings_file.wstring() + L"\" \"" + evtc_file_path.wstring() + L"\"";
+	std::vector<wchar_t> command_buffer(command.begin(), command.end());
+	command_buffer.push_back(L'\0');
 
-	if (!CreateProcessA(NULL, command_buffer.data(), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
-	{
-		CloseHandle(read_pipe);
-		CloseHandle(write_pipe);
+	if (!CreateProcessW(NULL, command_buffer.data(), NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
 		throw std::runtime_error("Failed to start Elite Insights");
-	}
 
-	CloseHandle(write_pipe);
+	HandleGuard process_handle(pi.hProcess), thread_handle(pi.hThread);
+	write_pipe.close();
 
-	int PARSE_TIMEOUT = 180000;
+	constexpr int PARSE_TIMEOUT = 180000;
 
-	if (WaitForSingleObject(pi.hProcess, PARSE_TIMEOUT) == WAIT_TIMEOUT)
+	if (WaitForSingleObject(process_handle.handle, PARSE_TIMEOUT) == WAIT_TIMEOUT)
 	{
-		TerminateProcess(pi.hProcess, EXIT_FAILURE);
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-		CloseHandle(read_pipe);
+		TerminateProcess(process_handle.handle, EXIT_FAILURE);
 		throw std::runtime_error("Elite Insights parser timeout. PID: " + std::to_string(pi.dwProcessId));
 	}
 
-	CloseHandle(pi.hProcess);
-	CloseHandle(pi.hThread);
-
 	CHAR buffer[4096];
-	DWORD read;
+	DWORD bytes_read;
 	std::string output;
 
-	while (ReadFile(read_pipe, buffer, sizeof(buffer) - 1, &read, NULL))
+	while (ReadFile(read_pipe.handle, buffer, sizeof(buffer) - 1, &bytes_read, NULL))
 	{
-		buffer[read] = '\0';
+		buffer[bytes_read] = '\0';
 		output += buffer;
 	}
-
-	CloseHandle(read_pipe);
 
 	std::smatch matches;
 
@@ -150,8 +150,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 			if (json.contains("isLegendaryCM"))
 				lcm = json.at("isLegendaryCM").get<bool>();
 
-			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE
-			                                                                                     : EncounterDifficulty::NORMAL_MODE;
+			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
 
 			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point {
 				std::istringstream ss(utc_time_str);
@@ -227,7 +226,7 @@ void EliteInsights::install()
 			throw std::runtime_error("Failed to create installation directory: " + installation_directory.string());
 		}
 
-	auto settings = GET_SETTING(parser);
+	auto settings = addon::settings->get().parser;
 
 	auto local_version = get_local_version();
 	auto is_installed = [&] { return local_version.is_valid() && std::filesystem::exists(executable_file) && std::filesystem::exists(settings_file); };
@@ -236,7 +235,7 @@ void EliteInsights::install()
 
 	if (!settings.auto_update && installed)
 	{
-		LOG("Parser auto update disabled.", LOGLEVEL_DEBUG);
+		addon::log("Parser auto update disabled.", LOGLEVEL_DEBUG);
 		this->installed.store(installed);
 		return;
 	}
@@ -248,9 +247,9 @@ void EliteInsights::install()
 		if (latest_version > local_version || !installed)
 		{
 			if (installed)
-				LOG("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), LOGLEVEL_DEBUG);
+				addon::log("Updating Elite Insights: " + local_version.get_tag() + " -> " + latest_version.get_tag(), LOGLEVEL_DEBUG);
 			else
-				LOG("Installing Elite Insights " + latest_version.get_tag(), LOGLEVEL_DEBUG);
+				addon::log("Installing Elite Insights " + latest_version.get_tag(), LOGLEVEL_DEBUG);
 
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
@@ -344,7 +343,7 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 
 			if (is_installed())
 			{
-				LOG("Installed Elite Insights " + local_version.get_tag(), LOGLEVEL_INFO);
+				addon::log("Installed Elite Insights " + local_version.get_tag(), LOGLEVEL_INFO);
 				this->installed.store(true);
 				return;
 			}
@@ -353,14 +352,14 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 		}
 		else
 		{
-			LOG("Elite Insights is up to date: " + local_version.get_tag(), LOGLEVEL_DEBUG);
+			addon::log("Elite Insights is up to date: " + local_version.get_tag(), LOGLEVEL_DEBUG);
 			this->installed.store(true);
 			return;
 		}
 	}
 	else
 	{
-		LOG("Failed to determine latest Elite Insights version", LOGLEVEL_WARNING);
+		addon::log("Failed to determine latest Elite Insights version", LOGLEVEL_WARNING);
 
 		if (installed)
 			this->installed.store(true);
@@ -402,12 +401,12 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 			auto version_response = cpr::Get(cpr::Url{ url }, CPR_PARAMETERS);
 
 			if (version_response.status_code != 200)
-				throw std::exception("Invalid http status code");
+				throw std::runtime_error("Invalid http status code");
 
 			const auto json_response = nlohmann::json::parse(version_response.text);
 
 			if (!json_response.contains("tag_name") || !json_response.contains("assets") || !json_response["assets"].is_array() || json_response["assets"].empty())
-				throw std::exception("Invalid json response");
+				throw std::runtime_error("Invalid json response");
 
 			std::string download_url;
 
@@ -420,13 +419,13 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 				}
 			}
 			if (download_url.empty())
-				throw std::exception("Asset download url not found");
+				throw std::runtime_error("Asset download url not found");
 
 			version = EliteInsightsVersion(json_response["tag_name"].get<std::string>(), download_url);
 		}
 		catch (const std::exception& e)
 		{
-			LOG("Failed to parse release information: " + std::string(e.what()), LOGLEVEL_WARNING);
+			addon::log("Failed to parse release information: " + std::string(e.what()), LOGLEVEL_WARNING);
 		}
 
 		return version;
@@ -438,7 +437,7 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 
 		if (version_response.status_code != 200)
 		{
-			LOG("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGLEVEL_WARNING);
+			addon::log("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGLEVEL_WARNING);
 			return version;
 		}
 

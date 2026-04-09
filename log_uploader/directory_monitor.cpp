@@ -1,6 +1,5 @@
 #include "directory_monitor.h"
 #include "log_manager.h"
-#include "logger.h"
 #include "platform.h"
 
 #include <ShlObj.h>
@@ -18,32 +17,17 @@ void DirectoryMonitor::initialize()
 		try
 		{
 			PWSTR path = nullptr;
-			if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path)) && path != nullptr)
+			if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &path)) && path != nullptr)
 			{
 				std::unique_ptr<wchar_t, decltype(&::CoTaskMemFree)> guard(path, ::CoTaskMemFree);
-				const auto size = WideCharToMultiByte(CP_UTF8, 0, path, -1, NULL, 0, NULL, NULL);
-				if (size > 0)
-				{
-					std::string string(size, 0);
-					WideCharToMultiByte(CP_UTF8, 0, path, -1, &string[0], size, NULL, NULL);
-					string.resize(static_cast<std::basic_string<char, std::char_traits<char>, std::allocator<char>>::size_type>(size) - 1);
-					if (!string.empty())
-					{
-						const auto documents_path = std::filesystem::path(string);
-						monitor_directory = documents_path / "Guild Wars 2" / "addons" / "arcdps" / "arcdps.cbtlogs";
-					}
-					else
-						throw std::exception("Failed to get documents path: Unable to convert path");
-				}
-				else
-					throw std::exception("Failed to get documents path: Path is empty");
+				monitor_directory = std::filesystem::path(path) / "Guild Wars 2" / "addons" / "arcdps" / "arcdps.cbtlogs";
 			}
 			else
-				throw std::exception("Failed to get documents path: SHGetKnownFolderPath failed");
+				throw std::runtime_error("Failed to get documents path");
 		}
-		catch (std::exception& e)
+		catch (const std::exception& e)
 		{
-			LOG("Failed to initialize directory monitor:" + std::string(e.what()), LOGLEVEL_CRITICAL);
+			addon::log("Failed to initialize directory monitor: " + std::string(e.what()), LOGLEVEL_CRITICAL);
 			initialized.store(false);
 			return;
 		}
@@ -51,7 +35,7 @@ void DirectoryMonitor::initialize()
 
 	initialized.store(true);
 
-	LOG("Monitoring directory: " + monitor_directory.string(), LOGLEVEL_INFO);
+	addon::log("Monitoring directory: " + monitor_directory.string(), LOGLEVEL_INFO);
 
 	this->monitor_thread = std::thread(&DirectoryMonitor::run, this);
 }
@@ -74,7 +58,7 @@ void DirectoryMonitor::run()
 {
 	if (monitor_directory.empty() || !std::filesystem::exists(monitor_directory))
 	{
-		LOG("Directory monitor not started: path does not exist: " + monitor_directory.string(), LOGLEVEL_WARNING);
+		addon::log("Directory monitor not started: path does not exist: " + monitor_directory.string(), LOGLEVEL_WARNING);
 		return;
 	}
 
@@ -82,7 +66,7 @@ void DirectoryMonitor::run()
 
 	if (directory_handle == INVALID_HANDLE_VALUE)
 	{
-		LOG("Failed to get directory handle", LOGLEVEL_CRITICAL);
+		addon::log("Failed to get directory handle", LOGLEVEL_CRITICAL);
 		return;
 	}
 
@@ -93,12 +77,12 @@ void DirectoryMonitor::run()
 
 	if (monitor_overlapped.hEvent == NULL)
 	{
-		LOG("Failed to create event", LOGLEVEL_CRITICAL);
+		addon::log("Failed to create event", LOGLEVEL_CRITICAL);
 		CloseHandle(directory_handle);
 		return;
 	}
 
-	LOG("Started monitoring: " + monitor_directory.string(), LOGLEVEL_DEBUG);
+	addon::log("Started monitoring: " + monitor_directory.string(), LOGLEVEL_DEBUG);
 
 	while (true)
 	{
@@ -106,7 +90,7 @@ void DirectoryMonitor::run()
 
 		if (!result && GetLastError() != ERROR_IO_PENDING)
 		{
-			LOG("Failed to read directory changes", LOGLEVEL_CRITICAL);
+			addon::log("Failed to read directory changes", LOGLEVEL_CRITICAL);
 			break;
 		}
 
@@ -153,12 +137,12 @@ void DirectoryMonitor::run()
 
 								if (log_available)
 								{
-									LOG("New evtc file detected: " + file_path.string(), LOGLEVEL_DEBUG);
+									addon::log("New evtc file detected: " + file_path.string(), LOGLEVEL_DEBUG);
 
 									addon::log_manager->add_log(file_path);
 								}
 								else
-									LOG("Evtc file unavailable: " + file_path.string(), LOGLEVEL_WARNING);
+									addon::log("Evtc file unavailable: " + file_path.string(), LOGLEVEL_WARNING);
 							}
 						}
 					}
@@ -170,7 +154,7 @@ void DirectoryMonitor::run()
 		}
 		else if (wait_result == WAIT_FAILED)
 		{
-			LOG("WaitForSingleObject failed", LOGLEVEL_CRITICAL);
+			addon::log("WaitForSingleObject failed", LOGLEVEL_CRITICAL);
 			break;
 		}
 	}
@@ -184,5 +168,5 @@ void DirectoryMonitor::run()
 	if (directory_handle != INVALID_HANDLE_VALUE)
 		CloseHandle(directory_handle);
 
-	LOG("Directory monitor stopped", LOGLEVEL_DEBUG);
+	addon::log("Directory monitor stopped", LOGLEVEL_DEBUG);
 }

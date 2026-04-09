@@ -1,5 +1,5 @@
 #include "dps_report_uploader.h"
-#include "logger.h"
+#include "platform.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>
@@ -18,7 +18,7 @@ void DPSReportUploader::add_log(std::shared_ptr<Log> log)
 
 	if (log->dps_report_upload.status != UploadStatus::AVAILABLE && log->dps_report_upload.status != UploadStatus::FAILED)
 	{
-		LOG("Log unavailable for dps.report upload: " + log->id, LOGLEVEL_WARNING);
+		addon::log("Log unavailable for dps.report upload: " + log->id, LOGLEVEL_WARNING);
 		return;
 	}
 
@@ -34,7 +34,7 @@ void DPSReportUploader::add_log(std::shared_ptr<Log> log)
 
 void DPSReportUploader::process_auto_upload(std::shared_ptr<Log> log)
 {
-	auto settings = GET_SETTING(dps_report);
+	auto settings = addon::settings->get().dps_report;
 
 	if (!settings.auto_upload)
 		return;
@@ -58,7 +58,7 @@ void DPSReportUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void DPSReportUploader::run()
 {
-	LOG("Starting dps.report uploader", LOGLEVEL_DEBUG);
+	addon::log("Starting dps.report uploader", LOGLEVEL_DEBUG);
 
 	while (initialized.load())
 	{
@@ -75,7 +75,7 @@ void DPSReportUploader::run()
 		std::unique_lock lock(log->mutex);
 		if (log->dps_report_upload.status != UploadStatus::QUEUED)
 		{
-			LOG("Log unavailable for dps.report upload: " + log->id, LOGLEVEL_WARNING);
+			addon::log("Log unavailable for dps.report upload: " + log->id, LOGLEVEL_WARNING);
 			continue;
 		}
 
@@ -90,15 +90,15 @@ void DPSReportUploader::run()
 		try
 		{
 			upload = this->upload(evtc_file_path);
-			LOG("Uploaded " + id + " to dps.report: " + upload.url, LOGLEVEL_INFO);
+			addon::log("Uploaded " + id + " to dps.report: " + upload.url, LOGLEVEL_INFO);
 
-			if (GET_SETTING(dps_report.user_token).empty() && !upload.user_token.empty())
+			if (addon::settings->get().dps_report.user_token.empty() && !upload.user_token.empty())
 			{
-				SET_SETTING(dps_report.user_token, upload.user_token);
-				LOG("dps.report user token acquired: " + upload.user_token, LOGLEVEL_INFO);
+				addon::settings->write([&](auto& s) { s.dps_report.user_token = upload.user_token; });
+				addon::log("dps.report user token acquired: " + upload.user_token, LOGLEVEL_INFO);
 			}
 
-			if (GET_SETTING(dps_report.auto_upload_copy_url_to_clipboard))
+			if (addon::settings->get().dps_report.auto_upload_copy_url_to_clipboard)
 			{
 				if (OpenClipboard(nullptr))
 				{
@@ -106,9 +106,16 @@ void DPSReportUploader::run()
 					HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, upload.url.size() + 1);
 					if (hg)
 					{
-						memcpy(GlobalLock(hg), upload.url.c_str(), upload.url.size() + 1);
-						GlobalUnlock(hg);
-						SetClipboardData(CF_TEXT, hg);
+						if (void* locked = GlobalLock(hg))
+						{
+							memcpy(locked, upload.url.c_str(), upload.url.size() + 1);
+							GlobalUnlock(hg);
+							SetClipboardData(CF_TEXT, hg);
+						}
+						else
+						{
+							GlobalFree(hg);
+						}
 					}
 					CloseClipboard();
 				}
@@ -118,7 +125,7 @@ void DPSReportUploader::run()
 		{
 			upload.status = UploadStatus::FAILED;
 			upload.error_message = e.what();
-			LOG("dps.report upload failed for " + id + ". Error: " + e.what(), LOGLEVEL_WARNING);
+			addon::log("dps.report upload failed for " + id + ". Error: " + e.what(), LOGLEVEL_WARNING);
 		}
 
 		lock.lock();
@@ -126,7 +133,7 @@ void DPSReportUploader::run()
 		log->update_view();
 	}
 
-	LOG("Stopping dps.report uploader", LOGLEVEL_DEBUG);
+	addon::log("Stopping dps.report uploader", LOGLEVEL_DEBUG);
 }
 
 DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
@@ -135,9 +142,9 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 	cpr::Parameters parameters{};
 	cpr::Multipart multipart{ { "file", cpr::File(evtc_file_path.string(), evtc_file_path.filename().string()) }, { "json", "1" } };
 
-	auto settings = GET_SETTING(dps_report);
+	auto settings = addon::settings->get().dps_report;
 
-	if (!settings.user_token.empty() && settings.user_token.length() == 32)
+	if (!settings.user_token.empty()&& settings.user_token.length() == 32)
 		parameters.Add({ "userToken", settings.user_token });
 	if (settings.anonymize)
 		parameters.Add({ "anonymous", "true" });

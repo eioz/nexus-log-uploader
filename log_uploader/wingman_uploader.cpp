@@ -1,5 +1,5 @@
 #include "wingman_uploader.h"
-#include "logger.h"
+#include "platform.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>
@@ -22,7 +22,7 @@ void WingmanUploader::add_log(std::shared_ptr<Log> log)
 	// allow uploading for available and failed logs
 	if (log->parser_data.status != ParseStatus::PARSED || (log->wingman_upload.status != UploadStatus::AVAILABLE && log->wingman_upload.status != UploadStatus::FAILED))
 	{
-		LOG("Log unavailable for wingman upload: " + log->id, LOGLEVEL_WARNING);
+		addon::log("Log unavailable for wingman upload: " + log->id, LOGLEVEL_WARNING);
 		return;
 	}
 
@@ -39,7 +39,7 @@ void WingmanUploader::add_log(std::shared_ptr<Log> log)
 
 void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 {
-	auto settings = GET_SETTING(wingman);
+	auto settings = addon::settings->get().wingman;
 
 	if (!settings.auto_upload)
 		return;
@@ -61,7 +61,7 @@ void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void WingmanUploader::run()
 {
-	LOG("Starting Wingman uploader", LOGLEVEL_DEBUG);
+	addon::log("Starting Wingman uploader", LOGLEVEL_DEBUG);
 
 	while (true)
 	{
@@ -81,7 +81,7 @@ void WingmanUploader::run()
 
 		if (log->parser_data.status != ParseStatus::PARSED || log->wingman_upload.status != UploadStatus::QUEUED)
 		{
-			LOG("Log unavailable for wingman upload: " + log->id, LOGLEVEL_WARNING);
+			addon::log("Log unavailable for wingman upload: " + log->id, LOGLEVEL_WARNING);
 			log->wingman_upload.status = UploadStatus::FAILED;
 			continue;
 		}
@@ -100,13 +100,13 @@ void WingmanUploader::run()
 		try
 		{
 			upload = this->upload(log_data);
-			LOG("Wingman upload successful: " + id, LOGLEVEL_INFO);
+			addon::log("Wingman upload successful: " + id, LOGLEVEL_INFO);
 		}
 		catch (const std::exception& e)
 		{
 			upload.status = UploadStatus::FAILED;
 			upload.error_message = e.what();
-			LOG("Wingman upload failed: " + id + ". Error: " + e.what(), LOGLEVEL_WARNING);
+			addon::log("Wingman upload failed: " + id + ". Error: " + e.what(), LOGLEVEL_WARNING);
 		}
 
 		lock.lock();
@@ -115,12 +115,12 @@ void WingmanUploader::run()
 		log->update_view();
 	}
 
-	LOG("Wingman uploader stopped", LOGLEVEL_DEBUG);
+	addon::log("Wingman uploader stopped", LOGLEVEL_DEBUG);
 }
 
 WingmanUpload WingmanUploader::upload(LogData& log_data)
 {
-	auto settings = GET_SETTING(wingman);
+	auto settings = addon::settings->get().wingman;
 
 	WingmanUpload upload;
 	upload.status = UploadStatus::FAILED;

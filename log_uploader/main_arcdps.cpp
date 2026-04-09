@@ -4,7 +4,6 @@
 #include "directory_monitor.h"
 #include "dps_report_uploader.h"
 #include "log_manager.h"
-#include "logger.h"
 #include "parser.h"
 #include "settings.h"
 #include "ui.h"
@@ -121,7 +120,7 @@ static uintptr_t mod_wnd(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		if (wParam && !(lParam & (1 << 30)))
 		{
-			auto hotkey = GET_SETTING(display.hotkey);
+			auto hotkey = addon::settings->get().display.hotkey;
 
 			bool ctrl_match = !hotkey.ctrl || (GetKeyState(VK_CONTROL) & 0x8000);
 			bool shift_match = !hotkey.shift || (GetKeyState(VK_SHIFT) & 0x8000);
@@ -164,10 +163,10 @@ static uintptr_t mod_combat(cbtevent* ev, ag* src, ag* dst, const char* skillnam
 			if (!open_mumble_link("MumbleLink") && !open_mumble_link("MumbleLink_" + account_name))
 			{
 				mumble_link_disabled = true;
-				LOG("Mumble link disabled: failed to initialize under 'MumbleLink' or 'MumbleLink_" + account_name + "'", LOGLEVEL_CRITICAL);
+				addon::log("Mumble link disabled: failed to initialize under 'MumbleLink' or 'MumbleLink_" + account_name + "'", LOGLEVEL_CRITICAL);
 			}
 			else
-				LOG("Mumble link initialized", LOGLEVEL_DEBUG);
+				addon::log("Mumble link initialized", LOGLEVEL_DEBUG);
 		}
 	}
 
@@ -291,7 +290,7 @@ extern "C" __declspec(dllexport) void* get_init_addr(char* arcversion, ImGuiCont
 			addon::wingman_uploader->initialize();
 			addon::directory_monitor->initialize();
 
-			LOG("Initialized", LOGLEVEL_INFO);
+			addon::log("Initialized", LOGLEVEL_INFO);
 		});
 
 		initialized.store(true);

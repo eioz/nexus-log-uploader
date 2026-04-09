@@ -69,9 +69,6 @@
     <ClCompile Include="logs_table.cpp">
       <Filter>log manager\ui\windows</Filter>
     </ClCompile>
-    <ClCompile Include="logger.cpp">
-      <Filter>log manager</Filter>
-    </ClCompile>
     <ClCompile Include="settings.cpp">
       <Filter>log manager</Filter>
     </ClCompile>
@@ -117,9 +114,6 @@
     </ClInclude>
     <ClInclude Include="logs_table.h">
       <Filter>log manager\ui\windows</Filter>
-    </ClInclude>
-    <ClInclude Include="logger.h">
-      <Filter>log manager</Filter>
     </ClInclude>
     <ClInclude Include="settings.h">
       <Filter>log manager</Filter>

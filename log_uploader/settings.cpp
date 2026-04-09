@@ -1,5 +1,4 @@
 #include "settings.h"
-#include "logger.h"
 #include "platform.h"
 
 #include <fstream>
@@ -22,12 +21,12 @@ bool Settings::load()
 	try
 	{
 		if (!std::filesystem::exists(file_path))
-			throw std::exception("Settings file does not exist");
+			throw std::runtime_error("Settings file does not exist");
 
 		std::ifstream file(file_path);
 
 		if (!file.is_open())
-			throw std::exception("Failed to open settings file");
+			throw std::runtime_error("Failed to open settings file");
 
 		nlohmann::json json;
 		file >> json;
@@ -37,17 +36,13 @@ bool Settings::load()
 
 		target_json.merge_patch(json);
 
-		auto settings = target_json.get<SettingsData>();
-
-		settings.verify();
-
-		data = std::move(settings);
+		data = target_json.get<SettingsData>();
 
 		return true;
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }
@@ -58,12 +53,12 @@ bool Settings::save()
 	{
 		if (!std::filesystem::exists(file_path.parent_path()))
 			if (!std::filesystem::create_directories(file_path.parent_path()))
-				throw std::exception("Failed to create directory");
+				throw std::runtime_error("Failed to create directory");
 
 		std::ofstream file(file_path);
 
 		if (!file.is_open())
-			throw std::exception("Failed to open settings file");
+			throw std::runtime_error("Failed to open settings file");
 
 		nlohmann::json json = data;
 
@@ -74,9 +69,7 @@ bool Settings::save()
 	}
 	catch (const std::exception& e)
 	{
-		LOG("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }
-
-void SettingsData::verify() {}

@@ -1,5 +1,7 @@
 #include "platform.h"
 
+#include <mutex>
+
 namespace addon
 {
 std::filesystem::path directory;
@@ -7,6 +9,7 @@ Mumble::Data* mumble = nullptr;
 Platform platform = Platform::None;
 HMODULE dll_module = nullptr;
 
+static std::mutex log_mutex;
 static LogFn active_log_fn = nullptr;
 static IniPathFn active_ini_path_fn = nullptr;
 
@@ -17,10 +20,16 @@ void init_platform(Platform p, LogFn log_fn, IniPathFn ini_path_fn)
 	active_ini_path_fn = ini_path_fn;
 }
 
-void log(LogLevel level, const char* message)
+void log(const std::string& message, LogLevel level)
 {
+	std::lock_guard lock(log_mutex);
 	if (active_log_fn)
-		active_log_fn(level, message);
+		active_log_fn(level, message.c_str());
+}
+
+void log(const char* message, LogLevel level)
+{
+	log(std::string(message), level);
 }
 
 std::filesystem::path get_arcdps_ini_path()
@@ -36,7 +45,7 @@ std::filesystem::path get_log_directory()
 
 	if (!std::filesystem::exists(ini_path))
 	{
-		log(LOGLEVEL_DEBUG, ("arcdps.ini not found at " + ini_path.string() + ", using default log path").c_str());
+		addon::log("arcdps.ini not found at " + ini_path.string() + ", using default log path", LOGLEVEL_DEBUG);
 		return {};
 	}
 
@@ -51,7 +60,7 @@ std::filesystem::path get_log_directory()
 
 	if (boss_path.empty())
 	{
-		log(LOGLEVEL_DEBUG, "boss_encounter_path is empty in arcdps.ini, using default log path");
+		addon::log("boss_encounter_path is empty in arcdps.ini, using default log path", LOGLEVEL_DEBUG);
 		return {};
 	}
 

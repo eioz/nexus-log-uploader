@@ -124,8 +124,6 @@ struct SettingsData
 		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Display, hotkey, log_table)
 	} display;
 
-	void verify();
-
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SettingsData, dps_report, wingman, parser, display)
 };
 
@@ -137,6 +135,12 @@ public:
 	{
 		std::lock_guard lock(mutex);
 		save();
+	}
+
+	SettingsData get() const
+	{
+		std::shared_lock lock(mutex);
+		return data;
 	}
 
 	template <typename Func>
@@ -164,15 +168,3 @@ private:
 };
 
 DECLARE_MODULE(Settings, settings)
-
-#define GET_SETTING(path)                                                                       \
-	([]() -> decltype(auto) {                                                                   \
-		auto d = addon::settings->read([](const auto& s) -> decltype(auto) { return s.path; }); \
-		return d;                                                                               \
-	}())
-
-#define SET_SETTING(path, value)                                  \
-	do                                                            \
-	{                                                             \
-		addon::settings->write([&](auto& d) { d.path = value; }); \
-	} while (0)
