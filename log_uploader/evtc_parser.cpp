@@ -1,5 +1,5 @@
 #include "evtc_parser.h"
-#include "platform.h"
+#include "addon.h"
 
 #include <miniz/miniz.h>
 

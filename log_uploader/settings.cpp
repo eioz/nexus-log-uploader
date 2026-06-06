@@ -1,5 +1,5 @@
 #include "settings.h"
-#include "platform.h"
+#include "addon.h"
 
 #include <fstream>
 #include <nlohmann/json.hpp>

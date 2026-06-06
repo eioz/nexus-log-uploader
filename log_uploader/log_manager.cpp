@@ -2,7 +2,7 @@
 #include "dps_report_uploader.h"
 #include "evtc_parser.h"
 #include "parser.h"
-#include "platform.h"
+#include "addon.h"
 #include "ui.h"
 #include "wingman_uploader.h"
 

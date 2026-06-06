@@ -36,9 +36,8 @@
     <ClCompile Include="..\imgui\imgui_widgets.cpp">
       <Filter>imgui</Filter>
     </ClCompile>
-    <ClCompile Include="main_nexus.cpp" />
-    <ClCompile Include="main_arcdps.cpp" />
-    <ClCompile Include="platform.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="addon.cpp" />
     <ClCompile Include="ui.cpp">
       <Filter>log manager\ui</Filter>
     </ClCompile>
@@ -77,8 +76,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="platform.h" />
-    <ClInclude Include="arcdps.h" />
+    <ClInclude Include="addon.h" />
     <ClInclude Include="ui.h">
       <Filter>log manager\ui</Filter>
     </ClInclude>

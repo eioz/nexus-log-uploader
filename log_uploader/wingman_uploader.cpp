@@ -1,5 +1,5 @@
 #include "wingman_uploader.h"
-#include "platform.h"
+#include "addon.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>

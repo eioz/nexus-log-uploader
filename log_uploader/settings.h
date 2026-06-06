@@ -36,17 +36,6 @@ enum class WindowAlignment
 	BOTTOM_RIGHT
 };
 
-// Hotkey is only used by arcdps.
-struct Hotkey
-{
-	unsigned int key = 'L';
-	bool ctrl = true;
-	bool shift = false;
-	bool alt = false;
-
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE(Hotkey, key, ctrl, shift, alt)
-};
-
 using EncounterSelection = std::vector<TriggerID>;
 
 struct SettingsData
@@ -95,8 +84,6 @@ struct SettingsData
 
 	struct Display
 	{
-		Hotkey hotkey;
-
 		struct LogTable
 		{
 			bool fixed_size = false;
@@ -121,7 +108,7 @@ struct SettingsData
 
 		} log_table;
 
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Display, hotkey, log_table)
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Display, log_table)
 	} display;
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE(SettingsData, dps_report, wingman, parser, display)

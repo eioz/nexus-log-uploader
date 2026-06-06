@@ -1,5 +1,5 @@
 #include "dps_report_uploader.h"
-#include "platform.h"
+#include "addon.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>

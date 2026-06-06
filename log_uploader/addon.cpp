@@ -1,30 +1,20 @@
-#include "platform.h"
+#include "addon.h"
 
 #include <mutex>
 
 namespace addon
 {
 std::filesystem::path directory;
+AddonAPI_t* api = nullptr;
 Mumble::Data* mumble = nullptr;
-Platform platform = Platform::None;
-HMODULE dll_module = nullptr;
 
 static std::mutex log_mutex;
-static LogFn active_log_fn = nullptr;
-static IniPathFn active_ini_path_fn = nullptr;
-
-void init_platform(Platform p, LogFn log_fn, IniPathFn ini_path_fn)
-{
-	platform = p;
-	active_log_fn = log_fn;
-	active_ini_path_fn = ini_path_fn;
-}
 
 void log(const std::string& message, LogLevel level)
 {
 	std::lock_guard lock(log_mutex);
-	if (active_log_fn)
-		active_log_fn(level, message.c_str());
+	if (api)
+		api->Log(static_cast<ELogLevel>(level), ADDON_LOG_CHANNEL, message.c_str());
 }
 
 void log(const char* message, LogLevel level)
@@ -32,16 +22,16 @@ void log(const char* message, LogLevel level)
 	log(std::string(message), level);
 }
 
-std::filesystem::path get_arcdps_ini_path()
+static std::filesystem::path get_log_config_path()
 {
-	if (active_ini_path_fn)
-		return active_ini_path_fn();
+	if (api)
+		return std::filesystem::path(api->Paths_GetAddonDirectory("arcdps")) / "arcdps.ini";
 	return {};
 }
 
 std::filesystem::path get_log_directory()
 {
-	auto ini_path = get_arcdps_ini_path();
+	auto ini_path = get_log_config_path();
 
 	if (!std::filesystem::exists(ini_path))
 	{
@@ -67,10 +57,3 @@ std::filesystem::path get_log_directory()
 	return std::filesystem::path(boss_path) / "arcdps.cbtlogs";
 }
 } // namespace addon
-
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID /*lpReserved*/)
-{
-	if (ul_reason_for_call == DLL_PROCESS_ATTACH)
-		addon::dll_module = hModule;
-	return TRUE;
-}

@@ -1,5 +1,5 @@
 #include "elite_insights.h"
-#include "platform.h"
+#include "addon.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>

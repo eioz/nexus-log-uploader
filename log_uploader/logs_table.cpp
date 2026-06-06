@@ -1,7 +1,7 @@
 #include "logs_table.h"
 #include "dps_report_uploader.h"
 #include "parser.h"
-#include "platform.h"
+#include "addon.h"
 #include "ui.h"
 #include "ui_elements.h"
 #include "wingman_uploader.h"

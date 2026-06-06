@@ -1,6 +1,6 @@
 #include "directory_monitor.h"
 #include "log_manager.h"
-#include "platform.h"
+#include "addon.h"
 
 #include <ShlObj.h>
 #include <deque>
