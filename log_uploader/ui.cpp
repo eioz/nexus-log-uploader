@@ -2,8 +2,6 @@
 #include "log_manager.h"
 #include "ui_elements.h"
 
-#include <cstring>
-
 IMPLEMENT_MODULE(UI, ui)
 
 #define SAVE_SETTING(Setting) addon::settings->write([this, &settings](auto& _settings) { _settings.Setting = settings.Setting; });
@@ -157,7 +155,8 @@ void UI::draw_dps_report_options(SettingsData& settings)
 	// User Token
 	{
 		char user_token[32 + 1] = {};
-		std::strncpy(user_token, settings.dps_report.user_token.c_str(), sizeof(user_token) - 1);
+		auto copy_length = settings.dps_report.user_token.copy(user_token, sizeof(user_token) - 1);
+		user_token[copy_length] = '\0';
 		static bool toggle_password = false;
 
 		if (ImGui::InputText("User token", user_token, sizeof(user_token), !toggle_password ? ImGuiInputTextFlags_Password : 0))
