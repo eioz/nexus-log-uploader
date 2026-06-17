@@ -19,14 +19,24 @@ jobs:
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
+        with:
+          vs-version: '[17.0,18.0)'
+
+      - name: Use Visual Studio 2022 for vcpkg
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs2022 = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -version '[17.0,18.0)' -property installationPath
+          if (-not $vs2022) {
+            throw "Visual Studio 2022 with C++ tools not found."
+          }
+          "VCPKG_VISUAL_STUDIO_PATH=$vs2022" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Cache vcpkg packages
         uses: actions/cache@v4
         with:
           path: vcpkg_installed
-          key: vcpkg-x64-windows-static-${{ hashFiles('vcpkg.json') }}
-          restore-keys: |
-            vcpkg-x64-windows-static-
+          key: vcpkg-${{ runner.os }}-vs2022-x64-windows-static-${{ hashFiles('vcpkg.json', '.github/workflows/build.yml') }}
 
       - name: Install dependencies
         run: |
@@ -35,7 +45,7 @@ jobs:
           & "$vcpkg\vcpkg.exe" integrate install
 
       - name: Build
-        run: .\build.ps1
+        run: msbuild .\nexus_log_uploader.sln /p:Configuration=Release /p:Platform=x64 /m /v:minimal
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
