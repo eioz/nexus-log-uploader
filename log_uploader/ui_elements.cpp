@@ -178,7 +178,8 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 		if (strcmp(state.search_buffer, state.previous_search_buffer) != 0)
 		{
 			state.expand_on_search_update = true;
-			auto copy_length = std::min(std::strlen(state.search_buffer), sizeof(state.previous_search_buffer) - 1);
+			auto source_length = std::strlen(state.search_buffer);
+			auto copy_length = source_length < sizeof(state.previous_search_buffer) - 1 ? source_length : sizeof(state.previous_search_buffer) - 1;
 			std::copy_n(state.search_buffer, copy_length, state.previous_search_buffer);
 			state.previous_search_buffer[copy_length] = '\0';
 		}
