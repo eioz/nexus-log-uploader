@@ -3,10 +3,16 @@
 
 #include <miniz/miniz.h>
 
+#include <chrono>
 #include <cstring>
 #include <fstream>
 
 IMPLEMENT_MODULE(EVTCParser, evtc_parser)
+
+static std::chrono::system_clock::time_point to_system_clock(std::filesystem::file_time_type time)
+{
+	return std::chrono::time_point_cast<std::chrono::system_clock::duration>(time - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+}
 
 EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 {
@@ -19,7 +25,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 
 	data.evtc_file_path = evtc_file_path;
 
-	data.evtc_file_time = std::chrono::clock_cast<std::chrono::system_clock>(std::filesystem::last_write_time(evtc_file_path));
+	data.evtc_file_time = to_system_clock(std::filesystem::last_write_time(evtc_file_path));
 
 	std::vector<uint8_t> file_data;
 

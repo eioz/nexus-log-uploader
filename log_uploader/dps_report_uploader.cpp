@@ -1,5 +1,6 @@
 #include "dps_report_uploader.h"
 #include "addon.h"
+#include "platform/platform.h"
 #include "settings.h"
 
 #include <cpr/cpr.h>
@@ -99,27 +100,7 @@ void DPSReportUploader::run()
 			}
 
 			if (addon::settings->get().dps_report.auto_upload_copy_url_to_clipboard)
-			{
-				if (OpenClipboard(nullptr))
-				{
-					EmptyClipboard();
-					HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, upload.url.size() + 1);
-					if (hg)
-					{
-						if (void* locked = GlobalLock(hg))
-						{
-							memcpy(locked, upload.url.c_str(), upload.url.size() + 1);
-							GlobalUnlock(hg);
-							SetClipboardData(CF_TEXT, hg);
-						}
-						else
-						{
-							GlobalFree(hg);
-						}
-					}
-					CloseClipboard();
-				}
-			}
+				addon::platform::copy_text_to_clipboard(upload.url);
 		}
 		catch (const std::exception& e)
 		{
@@ -144,7 +125,7 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 
 	auto settings = addon::settings->get().dps_report;
 
-	if (!settings.user_token.empty()&& settings.user_token.length() == 32)
+	if (!settings.user_token.empty() && settings.user_token.length() == 32)
 		parameters.Add({ "userToken", settings.user_token });
 	if (settings.anonymize)
 		parameters.Add({ "anonymous", "true" });

@@ -1,14 +1,14 @@
 #include "ui_elements.h"
 #include "dps_report_uploader.h"
+#include "platform/platform.h"
 #include "parser.h"
 #include "wingman_uploader.h"
 
 #include <imgui_internal.h>
 
 #include <algorithm>
+#include <cstring>
 #include <unordered_map>
-
-#include <ShlObj.h>
 
 bool ImGui::ButtonDisabled(const char* label, bool disabled)
 {
@@ -61,7 +61,7 @@ void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 		if (log_data.parser_data.status == ParseStatus::UNPARSED)
 			addon::parser->add_log(log);
 		else if (log_data.parser_data.status == ParseStatus::PARSED)
-			ShellExecute(nullptr, L"open", log_data.parser_data.html_file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+			addon::platform::open_file(log_data.parser_data.html_file_path);
 	}
 
 	if (log_data.parser_data.error_message.has_value())
@@ -170,7 +170,7 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 	auto state_id = GetID(label);
 	auto& state = selector_states[state_id];
 
-	Text(label);
+	TextUnformatted(label);
 	Spacing();
 
 	if (InputText("Search", state.search_buffer, IM_ARRAYSIZE(state.search_buffer)))
@@ -178,7 +178,8 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 		if (strcmp(state.search_buffer, state.previous_search_buffer) != 0)
 		{
 			state.expand_on_search_update = true;
-			strncpy_s(state.previous_search_buffer, state.search_buffer, sizeof(state.previous_search_buffer));
+			std::strncpy(state.previous_search_buffer, state.search_buffer, sizeof(state.previous_search_buffer) - 1);
+			state.previous_search_buffer[sizeof(state.previous_search_buffer) - 1] = '\0';
 		}
 	}
 

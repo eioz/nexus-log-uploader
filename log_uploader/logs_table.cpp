@@ -2,12 +2,32 @@
 #include "dps_report_uploader.h"
 #include "parser.h"
 #include "addon.h"
+#include "platform/platform.h"
 #include "ui.h"
 #include "ui_elements.h"
 #include "wingman_uploader.h"
 
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+
 #undef min
 #undef max
+
+static std::string format_local_time(std::chrono::system_clock::time_point timepoint, const char* format)
+{
+	auto time = std::chrono::system_clock::to_time_t(timepoint);
+	std::tm local_time{};
+#ifdef _WIN32
+	localtime_s(&local_time, &time);
+#else
+	localtime_r(&time, &local_time);
+#endif
+
+	std::ostringstream stream;
+	stream << std::put_time(&local_time, format);
+	return stream.str();
+}
 
 void LogsTable::render()
 {
@@ -391,7 +411,7 @@ void LogsTable::draw_context_menu()
 						if (ImGui::MenuItem(("Open reports (" + std::to_string(logs_for_open.size()) + ")").c_str()))
 						{
 							for (auto& entry : logs_for_open)
-								ShellExecuteW(nullptr, L"open", entry.get().data.parser_data.html_file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+								addon::platform::open_file(entry.get().data.parser_data.html_file_path);
 						}
 					}
 				}
@@ -489,10 +509,7 @@ void LogTableEntry::update_view()
 	{
 		auto& encounter = data.parser_data.encounter;
 
-		auto time = std::chrono::clock_cast<std::chrono::system_clock>(encounter.end_time);
-		std::chrono::zoned_time local_time = { std::chrono::current_zone(), time };
-
-		view.time = std::format("{:%H:%M}", local_time);
+		view.time = format_local_time(encounter.end_time, "%H:%M");
 		view.name = encounter.name;
 		view.result = encounter.success ? "Success" : encounter.has_boss ? std::format("{:.2f}%", 100.f - encounter.health_percent_burned)
 		                                                                 : "Failure";
@@ -515,10 +532,7 @@ void LogTableEntry::update_view()
 	}
 	else
 	{
-		auto time = std::chrono::clock_cast<std::chrono::system_clock>(data.evtc_file_time);
-		std::chrono::zoned_time local_time = { std::chrono::current_zone(), time };
-
-		view.time = std::format("{:%H:%M}", local_time);
+		view.time = format_local_time(data.evtc_file_time, "%H:%M");
 
 		auto it = EncounterNames.find(data.trigger_id);
 
@@ -532,12 +546,9 @@ void LogTableEntry::update_view()
 void LogTableEntry::refresh_time_ago()
 {
 	auto get_time_ago = [](const std::chrono::system_clock::time_point& timepoint) {
-		auto sys_time = std::chrono::clock_cast<std::chrono::system_clock>(timepoint);
-		auto sys_time_trunc = std::chrono::floor<std::chrono::seconds>(sys_time);
+		auto sys_time_trunc = std::chrono::floor<std::chrono::seconds>(timepoint);
 
-		std::chrono::zoned_time local_time{ std::chrono::current_zone(), sys_time_trunc };
-
-		std::string formatted_time = std::format("{:%d %B %Y, %H:%M:%S}", local_time);
+		std::string formatted_time = format_local_time(sys_time_trunc, "%d %B %Y, %H:%M:%S");
 
 		std::ostringstream timestamp_stream;
 

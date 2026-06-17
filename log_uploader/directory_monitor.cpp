@@ -1,6 +1,7 @@
 #include "directory_monitor.h"
 #include "log_manager.h"
 #include "addon.h"
+#include "platform/platform.h"
 
 #include <ShlObj.h>
 #include <deque>
@@ -16,13 +17,8 @@ void DirectoryMonitor::initialize()
 	{
 		try
 		{
-			PWSTR path = nullptr;
-			if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Documents, 0, nullptr, &path)) && path != nullptr)
-			{
-				std::unique_ptr<wchar_t, decltype(&::CoTaskMemFree)> guard(path, ::CoTaskMemFree);
-				monitor_directory = std::filesystem::path(path) / "Guild Wars 2" / "addons" / "arcdps" / "arcdps.cbtlogs";
-			}
-			else
+			monitor_directory = addon::platform::get_default_log_directory();
+			if (monitor_directory.empty())
 				throw std::runtime_error("Failed to get documents path");
 		}
 		catch (const std::exception& e)

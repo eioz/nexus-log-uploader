@@ -1,5 +1,7 @@
 #include "addon.h"
 
+#include "platform/platform.h"
+
 #include <mutex>
 
 namespace addon
@@ -39,14 +41,10 @@ std::filesystem::path get_log_directory()
 		return {};
 	}
 
-	auto ini_wpath = ini_path.wstring();
-	wchar_t buffer[MAX_PATH] = {};
-	GetPrivateProfileStringW(L"session", L"boss_encounter_path", L"", buffer, MAX_PATH, ini_wpath.c_str());
+	auto boss_path = addon::platform::read_ini_path_value(ini_path, "session", "boss_encounter_path");
 
-	if (buffer[0] == L'\0')
-		GetPrivateProfileStringW(L"main", L"boss_encounter_path", L"", buffer, MAX_PATH, ini_wpath.c_str());
-
-	std::wstring boss_path(buffer);
+	if (boss_path.empty())
+		boss_path = addon::platform::read_ini_path_value(ini_path, "main", "boss_encounter_path");
 
 	if (boss_path.empty())
 	{
@@ -54,6 +52,6 @@ std::filesystem::path get_log_directory()
 		return {};
 	}
 
-	return std::filesystem::path(boss_path) / "arcdps.cbtlogs";
+	return boss_path / "arcdps.cbtlogs";
 }
 } // namespace addon

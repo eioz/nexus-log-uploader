@@ -26,3 +26,22 @@ cd nexus-log-uploader
 ```
 
 Output: `build\x64\Release\log_uploader.dll`
+
+### macOS native dev mock
+
+The native macOS workflow lives in the `nexus-mock` submodule so this addon stays Windows-DLL first.
+It builds a local mock host for UI and core workflow development, but it does not produce `log_uploader.dll`; use the Windows build or GitHub Actions artifact for the Nexus addon DLL.
+
+```sh
+brew install cmake ninja
+git clone https://github.com/microsoft/vcpkg.git ~/vcpkg
+~/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+git submodule update --init --recursive
+cd nexus-mock
+cmake --preset mac-mock-debug
+cmake --build --preset mac-mock-debug
+../build/mac-mock-debug/nexus_log_uploader_mac_mock
+```
+
+The mock uses deterministic local parser and upload results. It never uploads to dps.report or Wingman.
