@@ -3,7 +3,11 @@
 #include "log.h"
 #include "module.h"
 
+#include <atomic>
+#include <condition_variable>
+#include <mutex>
 #include <queue>
+#include <thread>
 
 class Uploader
 {

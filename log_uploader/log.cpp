@@ -1,7 +1,9 @@
 #include "log.h"
+#include "platform/platform.h"
 #include "ui.h"
 
-#include <ShlObj.h>
+#include <algorithm>
+#include <vector>
 
 Log::Log(EVTCParserData data)
 {
@@ -28,4 +30,4 @@ Log::Log(EVTCParserData data)
 
 Log::~Log() {}
 
-void DpsReportUpload::open() { ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
+void DpsReportUpload::open() { addon::platform::open_url(url); }

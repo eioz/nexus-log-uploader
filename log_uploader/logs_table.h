@@ -36,7 +36,7 @@ public:
 
 		{
 			std::shared_lock lock(ptr->mutex);
-			if (view_update_required = ptr->view_updated_required.exchange(false))
+			if ((view_update_required = ptr->view_updated_required.exchange(false)))
 				this->data = ptr->get_data();
 		}
 

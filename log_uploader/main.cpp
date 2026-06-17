@@ -4,17 +4,26 @@
 #include "dps_report_uploader.h"
 #include "log_manager.h"
 #include "parser.h"
-#include "resource.h"
 #include "settings.h"
 #include "ui.h"
 #include "wingman_uploader.h"
 
-#include <Nexus.h>
+#ifndef LOG_UPLOADER_MAC_DEV
+#include "resource.h"
+#endif
+
+#include <fstream>
+#include <vector>
 
 #define HOTKEY_UI "Open Log Uploader"
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
 #define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
 
+#ifndef LOG_UPLOADER_SOURCE_DIR
+#define LOG_UPLOADER_SOURCE_DIR "."
+#endif
+
+#ifndef LOG_UPLOADER_MAC_DEV
 static HMODULE addon_module = nullptr;
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID /*lpReserved*/)
@@ -23,9 +32,34 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID /*lpRese
 		addon_module = hModule;
 	return TRUE;
 }
+#endif
 
 void render() { addon::ui->render_windows(); }
 void render_options() { addon::ui->render_options(); }
+
+static void load_quick_access_texture()
+{
+#ifdef LOG_UPLOADER_MAC_DEV
+	auto icon_path = std::filesystem::path(LOG_UPLOADER_SOURCE_DIR) / "log_uploader" / "resources" / "icon.png";
+	std::ifstream icon(icon_path, std::ios::binary | std::ios::ate);
+	if (!icon.is_open())
+		return;
+
+	auto size = icon.tellg();
+	if (size <= 0)
+		return;
+
+	std::vector<char> data(static_cast<size_t>(size));
+	icon.seekg(0, std::ios::beg);
+	if (icon.read(data.data(), size))
+		addon::api->Textures_LoadFromMemory(QUICK_ACCESS_TEXTURE, data.data(), data.size(), nullptr);
+#else
+	if (HRSRC hres = FindResource(addon_module, MAKEINTRESOURCE(IDR_LOG_ICON), RT_RCDATA))
+		if (HGLOBAL hdata = LoadResource(addon_module, hres))
+			if (void* ptr = LockResource(hdata))
+				addon::api->Textures_LoadFromMemory(QUICK_ACCESS_TEXTURE, ptr, SizeofResource(addon_module, hres), nullptr);
+#endif
+}
 
 void load(AddonAPI_t* addon_api)
 {
@@ -46,12 +80,9 @@ void load(AddonAPI_t* addon_api)
 		    if (strcmp(key, HOTKEY_UI) == 0 && !is_released)
 			    addon::ui->logs_table.toggle_visibility();
 	    },
-	    "CTRL+L");
+		    "CTRL+L");
 
-	if (HRSRC hres = FindResource(addon_module, MAKEINTRESOURCE(IDR_LOG_ICON), RT_RCDATA))
-		if (HGLOBAL hdata = LoadResource(addon_module, hres))
-			if (void* ptr = LockResource(hdata))
-				addon::api->Textures_LoadFromMemory(QUICK_ACCESS_TEXTURE, ptr, SizeofResource(addon_module, hres), nullptr);
+	load_quick_access_texture();
 	addon::api->QuickAccess_Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
 
 	if (!std::filesystem::exists(addon::directory))
@@ -94,7 +125,13 @@ void unload()
 
 AddonDefinition_t addon_definition;
 
-extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef()
+#ifdef _WIN32
+#define ADDON_EXPORT extern "C" __declspec(dllexport)
+#else
+#define ADDON_EXPORT extern "C"
+#endif
+
+ADDON_EXPORT AddonDefinition_t* GetAddonDef()
 {
 	addon_definition.Signature = -69;
 	addon_definition.APIVersion = NEXUS_API_VERSION;

@@ -6,6 +6,7 @@
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
+#include <mutex>
 #include <shared_mutex>
 
 inline void to_json(nlohmann::json& j, const ImVec2& v) { j = nlohmann::json{ { "x", v.x }, { "y", v.y } }; }

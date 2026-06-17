@@ -5,7 +5,6 @@
 
 #include <filesystem>
 #include <string>
-#include <windows.h>
 
 #define ADDON_VERSION_MAJOR 1
 #define ADDON_VERSION_MINOR 2
