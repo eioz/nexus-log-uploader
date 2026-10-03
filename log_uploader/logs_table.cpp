@@ -10,6 +10,16 @@
 #undef min
 #undef max
 
+namespace
+{
+std::string get_session_name(const SessionInfo& session)
+{
+	std::chrono::zoned_time local_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::minutes>(session.start_time) };
+
+	return std::format("{:%a %d %b %Y, %H:%M} ({})", local_time, session.log_count);
+}
+} // namespace
+
 void LogsTable::render()
 {
 	std::lock_guard lock(mutex);
@@ -102,11 +112,18 @@ void LogsTable::render()
 
 		if (!viewed_session_id.empty())
 		{
-			if (ImGui::SmallButton("Back"))
-				viewed_session_id.clear();
+			auto session = addon::session_manager->get_session(viewed_session_id);
 
-			ImGui::SameLine();
-			ImGui::TextUnformatted(viewed_session_name.c_str());
+			if (session)
+			{
+				if (ImGui::SmallButton("Back"))
+					viewed_session_id.clear();
+
+				ImGui::SameLine();
+				ImGui::Text("%s%s", session->archived ? "Archived: " : "", get_session_name(*session).c_str());
+			}
+			else
+				viewed_session_id.clear();
 		}
 
 		auto table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable;
@@ -362,7 +379,7 @@ void LogsTable::draw_context_menu()
 				std::array<std::deque<std::reference_wrapper<LogTableEntry>>, static_cast<size_t>(LogAction::COUNT)> action_logs;
 
 				auto fill_action_logs = [&](LogTableEntry& e) {
-					if (e.data.parser_data.status == ParseStatus::PARSED)
+					if (e.data.parser_data.has_report())
 					{
 						action_logs[static_cast<size_t>(LogAction::OPEN_REPORTS)].push_back(e);
 
@@ -371,7 +388,7 @@ void LogsTable::draw_context_menu()
 							action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)].push_back(e);
 						}
 					}
-					else if (e.data.parser_data.status == ParseStatus::UNPARSED)
+					else if (e.data.parser_data.status == ParseStatus::UNPARSED || e.data.parser_data.status == ParseStatus::PARSED)
 					{
 						action_logs[static_cast<size_t>(LogAction::PARSE)].push_back(e);
 					}
@@ -532,23 +549,68 @@ void LogsTable::draw_session_menu()
 
 	ImGui::Separator();
 
-	static const auto get_session_name = [](const SessionInfo& session) {
-		std::chrono::zoned_time local_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::minutes>(session.start_time) };
-		return std::format("{:%a %d %b %Y, %H:%M} ({})", local_time, session.log_count);
+	auto current_session_id = addon::session_manager->get_current_session_id();
+	auto displayed_session_id = viewed_session_id.empty() ? current_session_id : viewed_session_id;
+	auto sessions = addon::session_manager->get_sessions();
+
+	auto draw_sessions = [&](bool archived) {
+		for (const auto& session : sessions)
+		{
+			if (session.archived != archived)
+				continue;
+
+			ImGui::ID id(session.id);
+
+			if (ImGui::MenuItem(get_session_name(session).c_str(), nullptr, session.id == displayed_session_id))
+				viewed_session_id = session.id == current_session_id ? "" : session.id;
+		}
 	};
 
-	auto current_session_id = addon::session_manager->get_current_session_id();
+	draw_sessions(false);
 
-	for (const auto& session : addon::session_manager->get_sessions())
+	auto has_archived_sessions = std::any_of(sessions.begin(), sessions.end(), [](const auto& session) { return session.archived; });
+
+	if (ImGui::BeginMenu("Archived", has_archived_sessions))
 	{
-		ImGui::ID id(session.id);
+		draw_sessions(true);
+		ImGui::EndMenu();
+	}
 
-		auto viewed = viewed_session_id.empty() ? session.id == current_session_id : session.id == viewed_session_id;
+	auto displayed_session = std::find_if(sessions.begin(), sessions.end(), [&](const auto& session) { return session.id == displayed_session_id; });
 
-		if (ImGui::MenuItem(get_session_name(session).c_str(), nullptr, viewed))
+	if (displayed_session != sessions.end())
+	{
+		auto busy = std::any_of(entries.begin(), entries.end(), [](const auto& entry) { return entry.data.is_busy(); });
+
+		ImGui::Separator();
+		ImGui::TextDisabled("%s", get_session_name(*displayed_session).c_str());
+
+		if (!displayed_session->archived)
 		{
-			viewed_session_id = session.id == current_session_id ? "" : session.id;
-			viewed_session_name = get_session_name(session);
+			if (ImGui::BeginMenu("Archive", !busy))
+			{
+				ImGui::TextDisabled("Removes the Elite Insights reports");
+
+				if (ImGui::MenuItem("Confirm") && addon::session_manager->set_archived(displayed_session->id, true))
+					viewed_session_id = displayed_session->id;
+
+				ImGui::EndMenu();
+			}
+		}
+		else
+		{
+			if (ImGui::MenuItem("Unarchive"))
+				addon::session_manager->set_archived(displayed_session->id, false);
+
+			if (ImGui::BeginMenu("Delete", !busy))
+			{
+				ImGui::TextDisabled("Removes the session from the history");
+
+				if (ImGui::MenuItem("Confirm") && addon::session_manager->delete_session(displayed_session->id))
+					viewed_session_id.clear();
+
+				ImGui::EndMenu();
+			}
 		}
 	}
 

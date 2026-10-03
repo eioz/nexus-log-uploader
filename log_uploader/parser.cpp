@@ -36,7 +36,10 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 	std::unique_lock lock(log->mutex);
 
-	if (log->parser_data.status != ParseStatus::UNPARSED)
+	// logs of archived sessions can be parsed again
+	auto parsable = log->parser_data.status == ParseStatus::UNPARSED || (log->parser_data.status == ParseStatus::PARSED && !log->parser_data.has_report());
+
+	if (!parsable)
 	{
 		addon::log("Log unavailable for parsing: " + log->id, LOGLEVEL_WARNING);
 		return;
@@ -85,6 +88,7 @@ void Parser::run()
 		std::unique_lock log_lock(log->mutex);
 
 		auto evtc_file_path = log->evtc_file_path;
+		auto parsed_before = !log->parser_data.encounter.name.empty();
 
 		log->parser_data.status = ParseStatus::PARSING;
 
@@ -102,8 +106,12 @@ void Parser::run()
 				log->update_view();
 			}
 
-			addon::dps_report_uploader->process_auto_upload(log);
-			addon::wingman_uploader->process_auto_upload(log);
+			// logs of archived sessions keep their summary, auto upload only handles a log's first parse
+			if (!parsed_before)
+			{
+				addon::dps_report_uploader->process_auto_upload(log);
+				addon::wingman_uploader->process_auto_upload(log);
+			}
 		}
 		catch (const std::exception& e)
 		{

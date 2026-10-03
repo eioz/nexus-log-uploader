@@ -56,12 +56,15 @@ void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 
 	auto available = log_data.parser_data.status == ParseStatus::PARSED || log_data.parser_data.status == ParseStatus::UNPARSED;
 
-	if (ButtonDisabled(get_text(log_data.parser_data.status), !available))
+	// logs of archived sessions can be parsed again
+	auto text = log_data.parser_data.status == ParseStatus::PARSED && !log_data.parser_data.has_report() ? "Parse" : get_text(log_data.parser_data.status);
+
+	if (ButtonDisabled(text, !available))
 	{
-		if (log_data.parser_data.status == ParseStatus::UNPARSED)
-			addon::parser->add_log(log);
-		else if (log_data.parser_data.status == ParseStatus::PARSED)
+		if (log_data.parser_data.has_report())
 			ShellExecute(nullptr, L"open", log_data.parser_data.html_file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+		else
+			addon::parser->add_log(log);
 	}
 
 	if (log_data.parser_data.error_message.has_value())
@@ -139,7 +142,7 @@ void ImGui::ButtonWingmanUpload(std::shared_ptr<Log> log, WingmanUpload& upload_
 {
 	ID id("Wingman Button");
 
-	auto available = upload_data.status == UploadStatus::AVAILABLE && parser_data.status == ParseStatus::PARSED;
+	auto available = upload_data.status == UploadStatus::AVAILABLE && parser_data.has_report();
 
 	if (ButtonUpload(upload_data.status, available))
 	{

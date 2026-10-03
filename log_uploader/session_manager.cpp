@@ -98,12 +98,13 @@ void SessionManager::initialize()
 		{
 			auto id = entry.path().filename().string();
 
-			if (!entry.is_directory() || sessions.contains(id))
+			if (!entry.is_directory() || sessions.contains(id) || !std::filesystem::exists(entry.path() / SESSION_FILE))
 				continue;
 
 			try
 			{
 				sessions[id] = read_session(entry.path() / SESSION_FILE).info;
+				index_save_required = true;
 			}
 			catch (const std::exception& e)
 			{
@@ -111,7 +112,8 @@ void SessionManager::initialize()
 			}
 		}
 
-		std::erase_if(sessions, [this](const auto& session) { return !std::filesystem::exists(sessions_directory / session.first / SESSION_FILE); });
+		if (std::erase_if(sessions, [this](const auto& session) { return !std::filesystem::exists(sessions_directory / session.first / SESSION_FILE); }) > 0)
+			index_save_required = true;
 	}
 	catch (const std::exception& e)
 	{
@@ -121,7 +123,7 @@ void SessionManager::initialize()
 	// continue the latest session after a restart or reload
 	auto latest = std::max_element(sessions.begin(), sessions.end(), [](const auto& a, const auto& b) { return a.second.end_time < b.second.end_time; });
 
-	if (latest != sessions.end() && std::chrono::system_clock::now() - latest->second.end_time < SESSION_TIMEOUT)
+	if (latest != sessions.end() && !latest->second.archived && std::chrono::system_clock::now() - latest->second.end_time < SESSION_TIMEOUT)
 	{
 		auto id = latest->first;
 
@@ -170,12 +172,86 @@ void SessionManager::add_log(std::shared_ptr<Log> log)
 		info.end_time = time;
 
 	changed_sessions.insert(current_session_id);
+	index_save_required = true;
 }
 
 void SessionManager::start_new_session()
 {
 	std::lock_guard lock(mutex);
 	current_session_id.clear();
+}
+
+bool SessionManager::set_archived(const std::string& session_id, bool archived)
+{
+	std::lock_guard lock(mutex);
+
+	auto logs = session_logs.find(session_id);
+
+	if (logs == session_logs.end())
+		return false;
+
+	if (archived)
+	{
+		for (const auto& log : logs->second)
+		{
+			std::shared_lock log_lock(log->mutex);
+
+			if (log->is_busy())
+				return false;
+		}
+
+		// the summaries stay, the reports can be parsed again from the original logs
+		for (const auto& log : logs->second)
+		{
+			std::unique_lock log_lock(log->mutex);
+			log->parser_data.html_file_path.clear();
+			log->parser_data.json_file_path.clear();
+			log->update_view();
+		}
+
+		remove_requests.push_back(sessions_directory / session_id / REPORTS_DIRECTORY);
+
+		if (current_session_id == session_id)
+			current_session_id.clear();
+	}
+
+	sessions[session_id].archived = archived;
+	changed_sessions.insert(session_id);
+	index_save_required = true;
+
+	return true;
+}
+
+bool SessionManager::delete_session(const std::string& session_id)
+{
+	std::lock_guard lock(mutex);
+
+	auto session = sessions.find(session_id);
+
+	if (session == sessions.end() || !session->second.archived)
+		return false;
+
+	auto logs = session_logs.find(session_id);
+
+	if (logs != session_logs.end())
+	{
+		for (const auto& log : logs->second)
+		{
+			std::shared_lock log_lock(log->mutex);
+
+			if (log->is_busy())
+				return false;
+		}
+
+		session_logs.erase(logs);
+	}
+
+	sessions.erase(session);
+	changed_sessions.erase(session_id);
+	remove_requests.push_back(sessions_directory / session_id);
+	index_save_required = true;
+
+	return true;
 }
 
 std::vector<SessionInfo> SessionManager::get_sessions()
@@ -190,6 +266,18 @@ std::vector<SessionInfo> SessionManager::get_sessions()
 	std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.start_time > b.start_time; });
 
 	return result;
+}
+
+std::optional<SessionInfo> SessionManager::get_session(const std::string& session_id)
+{
+	std::lock_guard lock(mutex);
+
+	auto it = sessions.find(session_id);
+
+	if (it == sessions.end())
+		return std::nullopt;
+
+	return it->second;
 }
 
 std::deque<std::shared_ptr<Log>> SessionManager::get_logs(const std::string& session_id)
@@ -220,13 +308,27 @@ std::string SessionManager::get_current_session_id()
 
 std::filesystem::path SessionManager::get_reports_directory(std::shared_ptr<Log> log)
 {
-	std::lock_guard lock(mutex);
+	std::unique_lock lock(mutex);
+
+	std::filesystem::path directory;
 
 	for (const auto& [id, logs] : session_logs)
 		if (std::find(logs.begin(), logs.end(), log) != logs.end())
-			return sessions_directory / id / REPORTS_DIRECTORY;
+			directory = sessions_directory / id / REPORTS_DIRECTORY;
 
-	throw std::runtime_error("Log does not belong to a session");
+	if (directory.empty())
+		throw std::runtime_error("Log does not belong to a session");
+
+	auto removing = [&] { return std::find(remove_requests.begin(), remove_requests.end(), directory) != remove_requests.end(); };
+	auto kept = [&] { return std::find(kept_reports.begin(), kept_reports.end(), directory) != kept_reports.end(); };
+
+	// a parse right after archiving would lose its reports otherwise
+	remove_cv.wait(lock, [&] { return !removing() || kept(); });
+
+	if (removing())
+		throw std::runtime_error("Failed to save the archived session");
+
+	return directory;
 }
 
 void SessionManager::run()
@@ -284,6 +386,9 @@ void SessionManager::save()
 {
 	std::vector<std::pair<SessionInfo, std::deque<std::shared_ptr<Log>>>> changed;
 	std::vector<SessionInfo> index;
+	std::vector<std::filesystem::path> removed_paths;
+	std::vector<std::filesystem::path> kept_paths;
+	auto save_index = false;
 
 	{
 		std::lock_guard lock(mutex);
@@ -293,16 +398,19 @@ void SessionManager::save()
 				if (log->save_required.exchange(false))
 					changed_sessions.insert(id);
 
-		if (changed_sessions.empty())
-			return;
-
 		for (const auto& id : changed_sessions)
 			changed.emplace_back(sessions[id], session_logs[id]);
 
-		for (const auto& [id, info] : sessions)
-			index.push_back(info);
+		if (index_save_required)
+			for (const auto& [id, info] : sessions)
+				index.push_back(info);
+
+		save_index = index_save_required;
+		removed_paths = remove_requests;
 
 		changed_sessions.clear();
+		index_save_required = false;
+		kept_reports.clear();
 	}
 
 	for (const auto& [info, logs] : changed)
@@ -324,17 +432,54 @@ void SessionManager::save()
 		catch (const std::exception& e)
 		{
 			addon::log("Failed to save session " + info.id + ": " + e.what(), LOGLEVEL_WARNING);
+
+			// the reports of an archived session stay until its file no longer refers to them
+			kept_paths.push_back(sessions_directory / info.id / REPORTS_DIRECTORY);
 		}
 	}
 
-	try
+	if (save_index)
 	{
-		write_json(sessions_directory / INDEX_FILE, index);
+		try
+		{
+			write_json(sessions_directory / INDEX_FILE, index);
+		}
+		catch (const std::exception& e)
+		{
+			addon::log("Failed to save session index: " + std::string(e.what()), LOGLEVEL_WARNING);
+		}
 	}
-	catch (const std::exception& e)
+
+	for (const auto& path : removed_paths)
 	{
-		addon::log("Failed to save session index: " + std::string(e.what()), LOGLEVEL_WARNING);
+		if (std::find(kept_paths.begin(), kept_paths.end(), path) != kept_paths.end())
+			continue;
+
+		std::error_code ec;
+
+		// the session file goes first so a partly removed session is not loaded again
+		std::filesystem::remove(path / SESSION_FILE, ec);
+		std::filesystem::remove_all(path, ec);
+
+		if (ec)
+			addon::log("Failed to remove " + path.string() + ": " + ec.message(), LOGLEVEL_WARNING);
 	}
+
+	if (removed_paths.empty())
+		return;
+
+	// kept reports and requests added meanwhile stay for the next save
+	{
+		std::lock_guard lock(mutex);
+
+		for (const auto& path : removed_paths)
+			if (std::find(kept_paths.begin(), kept_paths.end(), path) == kept_paths.end())
+				remove_requests.erase(std::find(remove_requests.begin(), remove_requests.end(), path));
+
+		kept_reports = kept_paths;
+	}
+
+	remove_cv.notify_all();
 }
 
 std::string SessionManager::create_session(std::chrono::system_clock::time_point time)

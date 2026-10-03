@@ -137,6 +137,9 @@ public:
 
 	bool is_success() const { return status == ParseStatus::PARSED && encounter.success; }
 
+	// archived sessions keep parsed logs without their reports
+	bool has_report() const { return status == ParseStatus::PARSED && !html_file_path.empty(); }
+
 	ParseStatus status = ParseStatus::UNPARSED;
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(ParserData, html_file_path, json_file_path, error_message, encounter, players, status)
@@ -152,6 +155,13 @@ public:
 	ParserData parser_data = ParserData();
 	DpsReportUpload dps_report_upload = DpsReportUpload();
 	WingmanUpload wingman_upload = WingmanUpload();
+
+	bool is_busy() const
+	{
+		auto uploading = [](UploadStatus status) { return status == UploadStatus::QUEUED || status == UploadStatus::UPLOADING; };
+
+		return parser_data.status == ParseStatus::QUEUED || parser_data.status == ParseStatus::PARSING || uploading(dps_report_upload.status) || uploading(wingman_upload.status);
+	}
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(LogData, id, trigger_id, evtc_file_path, evtc_file_time, parser_data, dps_report_upload, wingman_upload)
 };

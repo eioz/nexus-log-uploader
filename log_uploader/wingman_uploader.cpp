@@ -16,7 +16,7 @@ void WingmanUploader::add_log(std::shared_ptr<Log> log)
 	std::unique_lock lock(log->mutex);
 
 	// allow uploading for available and failed logs
-	if (log->parser_data.status != ParseStatus::PARSED || (log->wingman_upload.status != UploadStatus::AVAILABLE && log->wingman_upload.status != UploadStatus::FAILED))
+	if (!log->parser_data.has_report() || (log->wingman_upload.status != UploadStatus::AVAILABLE && log->wingman_upload.status != UploadStatus::FAILED))
 	{
 		addon::log("Log unavailable for wingman upload: " + log->id, LOGLEVEL_WARNING);
 		return;
