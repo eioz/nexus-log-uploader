@@ -28,4 +28,4 @@ Log::Log(EVTCParserData data)
 
 Log::~Log() {}
 
-void DpsReportUpload::open() { ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL); }
+void Upload::open() { ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL); }

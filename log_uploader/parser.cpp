@@ -107,6 +107,8 @@ void Parser::run()
 				log->update_view();
 			}
 
+			addon::wingman_uploader->request_statistics(log);
+
 			// logs of archived sessions keep their summary, auto upload only handles a log's first parse
 			if (!parsed_before)
 			{

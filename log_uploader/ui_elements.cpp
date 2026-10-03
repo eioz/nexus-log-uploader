@@ -142,11 +142,15 @@ void ImGui::ButtonWingmanUpload(std::shared_ptr<Log> log, WingmanUpload& upload_
 {
 	ID id("Wingman Button");
 
+	// logs that were already on wingman can be opened too
+	auto uploaded = (upload_data.status == UploadStatus::UPLOADED || upload_data.status == UploadStatus::SKIPPED) && !upload_data.url.empty();
 	auto available = upload_data.status == UploadStatus::AVAILABLE && parser_data.has_report();
 
-	if (ButtonUpload(upload_data.status, available))
+	if (uploaded ? ButtonDisabled("Open", false) : ButtonUpload(upload_data.status, available))
 	{
-		if (upload_data.status == UploadStatus::AVAILABLE)
+		if (uploaded)
+			upload_data.open();
+		else
 			addon::wingman_uploader->add_log(log);
 	}
 

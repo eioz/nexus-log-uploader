@@ -44,7 +44,10 @@ enum class EncounterDifficulty
 class Upload
 {
 public:
+	std::string url;
 	std::optional<std::string> error_message;
+
+	void open();
 };
 
 enum class UploadStatus
@@ -63,11 +66,8 @@ class DpsReportUpload : public Upload
 public:
 	UploadStatus status = UploadStatus::AVAILABLE;
 
-	std::string url;
 	std::string id;
 	std::string user_token;
-
-	void open();
 
 	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(DpsReportUpload, status, url, id, error_message)
 };
@@ -77,7 +77,21 @@ class WingmanUpload : public Upload
 public:
 	UploadStatus status = UploadStatus::AVAILABLE;
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanUpload, status, error_message)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanUpload, status, url, error_message)
+};
+
+// statistics of the patch the log was recorded in, compared with all logs on wingman
+class WingmanStatistics
+{
+public:
+	std::optional<int> kill_percentile;
+	std::optional<int> median_duration_ms;
+	std::optional<int> best_duration_ms;
+
+	std::map<std::string, std::string> ranks;   // by account, empty for players without a rank
+	std::map<std::string, int> dps_percentiles; // by account, compared with the same profession
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, kill_percentile, median_duration_ms, best_duration_ms, ranks, dps_percentiles)
 };
 
 class Encounter
@@ -155,6 +169,7 @@ public:
 	ParserData parser_data = ParserData();
 	DpsReportUpload dps_report_upload = DpsReportUpload();
 	WingmanUpload wingman_upload = WingmanUpload();
+	WingmanStatistics wingman_statistics = WingmanStatistics();
 
 	bool is_busy() const
 	{
@@ -163,7 +178,7 @@ public:
 		return parser_data.status == ParseStatus::QUEUED || parser_data.status == ParseStatus::PARSING || uploading(dps_report_upload.status) || uploading(wingman_upload.status);
 	}
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(LogData, id, trigger_id, evtc_file_path, evtc_file_time, parser_data, dps_report_upload, wingman_upload)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(LogData, id, trigger_id, evtc_file_path, evtc_file_time, parser_data, dps_report_upload, wingman_upload, wingman_statistics)
 };
 
 class Log : public LogData

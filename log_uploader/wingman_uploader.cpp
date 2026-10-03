@@ -7,6 +7,28 @@
 IMPLEMENT_MODULE(WingmanUploader, wingman_uploader)
 
 #define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(180)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
+#define CPR_API_PARAMETERS cpr::Timeout(std::chrono::seconds(30)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
+
+namespace
+{
+// wingman reports most errors in the response
+nlohmann::json get_json(const cpr::Response& response)
+{
+	if (response.status_code != 200)
+		throw std::runtime_error("Status " + std::to_string(response.status_code) + " on " + response.url.str());
+
+	return nlohmann::json::parse(response.text);
+}
+
+// statistics without data are left out or null
+std::optional<int> get_number(const nlohmann::json& json, const char* key)
+{
+	if (json.contains(key) && json.at(key).is_number())
+		return json.at(key).get<int>();
+
+	return std::nullopt;
+}
+} // namespace
 
 void WingmanUploader::add_log(std::shared_ptr<Log> log)
 {
@@ -55,6 +77,16 @@ void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 		this->add_log(log);
 }
 
+void WingmanUploader::request_statistics(std::shared_ptr<Log> log)
+{
+	if (!initialized.load())
+		return;
+
+	std::unique_lock upload_queue_lock(upload_queue_mutex);
+	this->statistics_queue.push(log);
+	this->upload_cv.notify_one();
+}
+
 void WingmanUploader::run()
 {
 	addon::log("Starting Wingman uploader", LOGLEVEL_DEBUG);
@@ -63,10 +95,21 @@ void WingmanUploader::run()
 	{
 		std::unique_lock upload_queue_lock(upload_queue_mutex);
 
-		upload_cv.wait(upload_queue_lock, [&]() { return !upload_queue.empty() || !initialized.load(); });
+		upload_cv.wait(upload_queue_lock, [&]() { return !upload_queue.empty() || !statistics_queue.empty() || !initialized.load(); });
 
 		if (!initialized.load())
 			break;
+
+		if (!statistics_queue.empty())
+		{
+			auto log = statistics_queue.front();
+			statistics_queue.pop();
+
+			upload_queue_lock.unlock();
+
+			update_statistics(log);
+			continue;
+		}
 
 		auto log = upload_queue.front();
 		upload_queue.pop();
@@ -109,9 +152,160 @@ void WingmanUploader::run()
 
 		log->wingman_upload = upload;
 		log->update_view();
+
+		lock.unlock();
+
+		// the report link and the player ratings need the uploaded log
+		if (upload.status == UploadStatus::UPLOADED || upload.status == UploadStatus::SKIPPED)
+			update_statistics(log);
 	}
 
 	addon::log("Wingman uploader stopped", LOGLEVEL_DEBUG);
+}
+
+void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
+{
+	LogData data;
+
+	{
+		std::shared_lock lock(log->mutex);
+		data = log->get_data();
+	}
+
+	auto& encounter = data.parser_data.encounter;
+
+	// wingman only has statistics of bosses
+	if (data.parser_data.status != ParseStatus::PARSED || !encounter.has_boss)
+		return;
+
+	auto statistics = data.wingman_statistics;
+	auto url = data.wingman_upload.url;
+	auto boss_id = std::to_string(static_cast<int>(data.trigger_id));
+
+	// missing statistics are requested again with the next update, the first error stops this one
+	try
+	{
+		// legendary challenge modes have no kill percentiles
+		if (!statistics.kill_percentile && encounter.success && encounter.difficulty != EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
+		{
+			auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(encounter.start_time.time_since_epoch()).count();
+
+			cpr::Parameters parameters = { { "bossID", boss_id }, { "isCM", encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE ? "True" : "False" }, { "duration", std::to_string(encounter.duration_ms) }, { "timestamp", std::to_string(timestamp) } };
+
+			// patches before 26-01 have no percentiles, very slow kills get -1
+			auto percentile = get_number(get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/getPercentileByMetadata"), parameters, CPR_API_PARAMETERS)), "percentile");
+
+			if (percentile)
+				statistics.kill_percentile = std::clamp(*percentile, 0, 100);
+		}
+
+		if (!statistics.median_duration_ms)
+		{
+			auto era = get_era(encounter.start_time);
+			auto key = boss_id;
+
+			if (encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE)
+				key = "-" + boss_id;
+			else if (encounter.difficulty == EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
+				key = "--" + boss_id;
+
+			auto& boss = bosses[era + " " + key];
+
+			if (boss.is_null())
+				boss = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/boss"), cpr::Parameters{ { "era", era }, { "bossID", key } }, CPR_API_PARAMETERS));
+
+			statistics.median_duration_ms = get_number(boss, "duration_med");
+			statistics.best_duration_ms = get_number(boss, "duration_top");
+		}
+
+		for (const auto& player : data.parser_data.players)
+		{
+			if (statistics.ranks.contains(player.account))
+				continue;
+
+			if (!ranks.contains(player.account))
+			{
+				auto account = cpr::util::urlEncode(player.account);
+				auto response = cpr::Get(cpr::Url(WINGMAN_URL "/api/playerRanks/current/" + std::string(account.begin(), account.end())), CPR_API_PARAMETERS);
+
+				// players are ranked once they ask wingman for it
+				auto rank = response.status_code == 404 ? nlohmann::json() : get_json(response).value("globalRank", nlohmann::json());
+
+				ranks[player.account] = rank.is_string() && rank != "-" ? rank.get<std::string>() : "";
+			}
+
+			statistics.ranks[player.account] = ranks[player.account];
+		}
+
+		if (url.empty() && (data.wingman_upload.status == UploadStatus::UPLOADED || data.wingman_upload.status == UploadStatus::SKIPPED))
+		{
+			cpr::Multipart multipart = { { "file", data.evtc_file_path.filename().string() }, { "filesize", std::to_string(std::filesystem::file_size(data.evtc_file_path)) }, { "bossID", boss_id } };
+
+			auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/checkUploadSuccessfulWithLog"), multipart, CPR_API_PARAMETERS));
+
+			if (json.value("success", false))
+				url = WINGMAN_URL "/log/" + json.at("log").at("html").get<std::string>();
+		}
+
+		if (!url.empty() && encounter.success)
+		{
+			auto log_id = url.substr(url.rfind('/') + 1);
+
+			for (const auto& player : data.parser_data.players)
+			{
+				if (statistics.dps_percentiles.contains(player.account))
+					continue;
+
+				nlohmann::json body = { { "logs", nlohmann::json::array({ log_id }) }, { "playerAccount", player.account } };
+
+				auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/api/ratePerformanceOfPlayerInLogs"), cpr::Header{ { "Content-Type", "application/json" } }, cpr::Body(body.dump()), CPR_API_PARAMETERS));
+
+				// patches before 26-01 are not rated
+				auto percentile = get_number(json.at(0).value("percentiles", nlohmann::json()), "DamageProfession");
+
+				if (percentile && *percentile >= 0)
+					statistics.dps_percentiles[player.account] = *percentile;
+			}
+		}
+	}
+	catch (const std::exception& e)
+	{
+		if (initialized.load())
+			addon::log("Failed to get Wingman statistics for " + data.id + ". Error: " + e.what(), LOGLEVEL_WARNING);
+	}
+
+	std::unique_lock lock(log->mutex);
+
+	log->wingman_statistics = statistics;
+	log->wingman_upload.url = url;
+	log->update_view();
+}
+
+// the balance patch a log was recorded in
+std::string WingmanUploader::get_era(std::chrono::system_clock::time_point time)
+{
+	if (patches.is_null())
+		patches = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/patches"), CPR_API_PARAMETERS)).at("patches");
+
+	auto date = std::format("{:%F}", std::chrono::floor<std::chrono::days>(time));
+	std::string era;
+	std::string era_date;
+
+	for (const auto& patch : patches)
+	{
+		auto from = patch.value("from", "");
+
+		if (from <= date && from > era_date)
+		{
+			era = patch.value("id", "");
+			era_date = from;
+		}
+	}
+
+	if (era.empty())
+		throw std::runtime_error("No patch for " + date);
+
+	return era;
 }
 
 WingmanUpload WingmanUploader::upload(LogData& log_data)
