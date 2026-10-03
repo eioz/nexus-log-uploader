@@ -283,6 +283,16 @@ inline const std::map<TriggerID, std::string> EncounterNames = []() {
 	return result;
 }();
 
+inline const std::map<TriggerID, std::string> EncounterInstanceNames = []() {
+	std::map<TriggerID, std::string> result;
+	for (const auto& category : EncounterCategories)
+		for (const auto& instance : category.instances)
+			for (const auto& encounter : instance.encounters)
+				for (const auto& trigger : encounter.triggers)
+					result.emplace(trigger, instance.name);
+	return result;
+}();
+
 inline const std::map<TriggerID, unsigned> EncounterIcons = []() {
 	std::map<TriggerID, unsigned> result;
 	for (const auto& category : EncounterCategories)

@@ -1,12 +1,14 @@
 #pragma once
 
 #include "log.h"
+#include "settings.h"
 
 #include <imgui.h>
 
 #include <atomic>
 #include <deque>
 #include <mutex>
+#include <set>
 #include <string>
 #include <unordered_map>
 
@@ -94,9 +96,16 @@ private:
 
 	std::string viewed_session_id; // empty for the current session
 
+	// the tooltip opens where hovering its log started
+	std::shared_ptr<Log> tooltip_log;
+	ImVec2 tooltip_position = ImVec2(0, 0);
+	ImVec2 tooltip_size = ImVec2(0, 0);
+	double tooltip_time = 0.0;
+
 	void update_entries();
 	void draw_context_menu();
 	void draw_session_menu();
+	void draw_tooltip(const SettingsData::Display::LogTable& display_settings);
 
 	enum Columns : uint8_t
 	{

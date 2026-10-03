@@ -1,6 +1,9 @@
 #include "ui.h"
+#include "boons.h"
 #include "log_manager.h"
 #include "ui_elements.h"
+
+#include <algorithm>
 
 IMPLEMENT_MODULE(UI, ui)
 
@@ -141,6 +144,31 @@ void UI::draw_display_options(SettingsData& settings)
 	UI_CHECKBOX("Parser", display.log_table.parser_column);
 	UI_CHECKBOX("DPS Report", display.log_table.dps_report_column);
 	UI_CHECKBOX("Wingman", display.log_table.wingman_column);
+	ImGui::Spacing();
+	ImGui::Text("Tooltip");
+	UI_CHECKBOX("Downs and deaths", display.log_table.tooltip_downs_deaths);
+
+	if (ImGui::TreeNode("Boons"))
+	{
+		auto& boons = settings.display.log_table.tooltip_boons;
+
+		for (const auto& boon : Boons)
+		{
+			auto selected = std::find(boons.begin(), boons.end(), boon.id) != boons.end();
+
+			if (ImGui::Checkbox(boon.name, &selected))
+			{
+				if (selected)
+					boons.push_back(boon.id);
+				else
+					boons.erase(std::remove(boons.begin(), boons.end(), boon.id), boons.end());
+
+				SAVE_SETTING(display.log_table.tooltip_boons);
+			}
+		}
+
+		ImGui::TreePop();
+	}
 }
 
 void UI::draw_dps_report_options(SettingsData& settings)

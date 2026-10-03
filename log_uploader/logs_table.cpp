@@ -1,7 +1,10 @@
 #include "logs_table.h"
 #include "addon.h"
+#include "boons.h"
 #include "dps_report_uploader.h"
 #include "parser.h"
+#include "professions.h"
+#include "resource.h"
 #include "session_manager.h"
 #include "ui.h"
 #include "ui_elements.h"
@@ -10,6 +13,9 @@
 #undef min
 #undef max
 
+#define SUCCESS_COLOR ImVec4(0.45f, 0.8f, 0.45f, 1.f)
+#define FAILURE_COLOR ImVec4(0.9f, 0.45f, 0.4f, 1.f)
+
 namespace
 {
 std::string get_session_name(const SessionInfo& session)
@@ -17,6 +23,53 @@ std::string get_session_name(const SessionInfo& session)
 	std::chrono::zoned_time local_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::minutes>(session.start_time) };
 
 	return std::format("{:%a %d %b %Y, %H:%M} ({})", local_time, session.log_count);
+}
+
+const char* get_difficulty_name(EncounterDifficulty difficulty)
+{
+	switch (difficulty)
+	{
+	case EncounterDifficulty::CHALLENGE_MODE:
+		return "Challenge Mode";
+	case EncounterDifficulty::LEGENDARY_CHALLENGE_MODE:
+		return "Legendary Challenge Mode";
+	default:
+		return "Normal Mode";
+	}
+}
+
+std::string format_dps(int dps)
+{
+	return dps >= 1000 ? std::format("{:.1f}k", dps / 1000.0) : std::to_string(dps);
+}
+
+void text_right(const std::string& text)
+{
+	auto offset = ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(text.c_str()).x;
+
+	if (offset > 0)
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+
+	ImGui::TextUnformatted(text.c_str());
+}
+
+void icon_centered(unsigned resource_id, float height, const char* fallback)
+{
+	auto* texture = addon::get_icon(resource_id);
+
+	if (!texture || !texture->Resource)
+	{
+		ImGui::TextUnformatted(fallback);
+		return;
+	}
+
+	auto width = height * texture->Width / texture->Height;
+	auto offset = (ImGui::GetContentRegionAvail().x - width) * 0.5f;
+
+	if (offset > 0)
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+
+	ImGui::Image(texture->Resource, ImVec2(width, height));
 }
 } // namespace
 
@@ -244,6 +297,15 @@ void LogsTable::render()
 						break;
 					case Columns::NAME:
 						ImGui::TextUnformatted(view.name.c_str());
+
+						if (ImGui::IsItemHovered() && entry.data.parser_data.status == ParseStatus::PARSED)
+						{
+							if (tooltip_log != entry.ptr)
+								tooltip_position = ImGui::GetMousePos();
+
+							tooltip_log = entry.ptr;
+							tooltip_time = ImGui::GetTime();
+						}
 						break;
 					case Columns::RESULT:
 						ImGui::TextUnformatted(view.result.c_str());
@@ -272,6 +334,7 @@ void LogsTable::render()
 		}
 	}
 
+	draw_tooltip(display_settings);
 	draw_context_menu();
 
 	if (!display_settings.background)
@@ -615,6 +678,203 @@ void LogsTable::draw_session_menu()
 	}
 
 	ImGui::EndMenu();
+}
+
+void LogsTable::draw_tooltip(const SettingsData::Display::LogTable& display_settings)
+{
+	// stays open while its log or the tooltip itself is hovered, so it can be scrolled
+	if (!tooltip_log || ImGui::GetTime() - tooltip_time > 0.3 || ImGui::IsPopupOpen("Context Menu"))
+	{
+		tooltip_log.reset();
+		return;
+	}
+
+	auto entry = std::find_if(entries.begin(), entries.end(), [this](const auto& entry) { return entry.ptr == tooltip_log; });
+
+	if (entry == entries.end())
+	{
+		tooltip_log.reset();
+		return;
+	}
+
+	auto& parser_data = entry->data.parser_data;
+	auto& encounter = parser_data.encounter;
+	auto screen_size = ImGui::GetIO().DisplaySize;
+	auto font_size = ImGui::GetFontSize();
+
+	// next to where the hover started and within the screen
+	auto position = tooltip_position + ImVec2(font_size, font_size);
+	position.x = std::clamp(position.x, 0.f, std::max(screen_size.x - tooltip_size.x, 0.f));
+	position.y = std::clamp(position.y, 0.f, std::max(screen_size.y - tooltip_size.y, 0.f));
+
+	ImGui::SetNextWindowPos(position);
+	ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), screen_size);
+
+	auto window_flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+	if (ImGui::Begin("##Encounter Tooltip", nullptr, window_flags))
+	{
+		// also while its scrollbar is dragged
+		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
+			tooltip_time = ImGui::GetTime();
+
+		auto icon = EncounterIcons.find(entry->data.trigger_id);
+		auto* portrait = icon != EncounterIcons.end() ? addon::get_icon(icon->second) : nullptr;
+
+		if (portrait && portrait->Resource)
+		{
+			ImGui::Image(portrait->Resource, ImVec2(font_size * 3.f, font_size * 3.f));
+			ImGui::SameLine();
+		}
+
+		ImGui::BeginGroup();
+
+		auto* nexus_link = static_cast<NexusLinkData_t*>(addon::api->DataLink_Get(DL_NEXUS_LINK));
+
+		if (nexus_link && nexus_link->FontBig)
+			ImGui::PushFont(static_cast<ImFont*>(nexus_link->FontBig));
+
+		ImGui::TextUnformatted(encounter.name.c_str());
+
+		if (nexus_link && nexus_link->FontBig)
+			ImGui::PopFont();
+
+		std::string mode = get_difficulty_name(encounter.difficulty);
+		auto instance = EncounterInstanceNames.find(entry->data.trigger_id);
+
+		if (instance != EncounterInstanceNames.end())
+			mode = instance->second + " | " + mode;
+
+		ImGui::TextDisabled("%s", mode.c_str());
+
+		std::chrono::zoned_time end_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(encounter.end_time) };
+
+		ImGui::TextColored(encounter.success ? SUCCESS_COLOR : FAILURE_COLOR, "%s", entry->view.result.c_str());
+		ImGui::SameLine();
+		ImGui::TextDisabled("| %s | %s", entry->view.duration.c_str(), std::format("{:%d %b %Y, %H:%M}", end_time).c_str());
+
+		ImGui::EndGroup();
+		ImGui::Spacing();
+
+		// players grouped by subgroup, highest boss dps first
+		std::vector<const PlayerSummary*> players;
+
+		for (const auto& player : parser_data.players)
+			players.push_back(&player);
+
+		std::sort(players.begin(), players.end(), [](const auto* a, const auto* b) { return a->group != b->group ? a->group < b->group : a->boss_dps > b->boss_dps; });
+
+		std::vector<const BoonDefinition*> boons;
+
+		for (const auto& boon : Boons)
+			if (std::find(display_settings.tooltip_boons.begin(), display_settings.tooltip_boons.end(), boon.id) != display_settings.tooltip_boons.end())
+				boons.push_back(&boon);
+
+		auto show_breakbar = std::any_of(players.begin(), players.end(), [](const auto* player) { return player->breakbar_damage > 0; });
+		auto column_count = 3 + (display_settings.tooltip_downs_deaths ? 2 : 0) + (show_breakbar ? 1 : 0) + static_cast<int>(boons.size());
+		auto table_left = ImGui::GetCursorScreenPos().x;
+
+		if (ImGui::BeginTable("Squad", column_count, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_RowBg))
+		{
+			// a regular row, so the labels count towards the column widths
+			ImGui::TableNextRow();
+			ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGuiCol_TableHeaderBg));
+			ImGui::TableNextColumn();
+			ImGui::TextUnformatted("Player");
+			ImGui::TableNextColumn();
+			text_right("Boss DPS");
+			ImGui::TableNextColumn();
+			text_right("Cleave DPS");
+
+			if (display_settings.tooltip_downs_deaths)
+			{
+				ImGui::TableNextColumn();
+				icon_centered(IDR_COMBAT_DOWNED, font_size, "Downs");
+				ImGui::TableNextColumn();
+				icon_centered(IDR_COMBAT_DEAD, font_size, "Deaths");
+			}
+
+			if (show_breakbar)
+			{
+				ImGui::TableNextColumn();
+				icon_centered(IDR_COMBAT_CC, font_size, "CC");
+			}
+
+			for (const auto* boon : boons)
+			{
+				ImGui::TableNextColumn();
+				icon_centered(boon->icon, font_size, boon->name);
+			}
+
+			// measured in the last column, the table is not limited to the window width
+			auto table_width = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x + ImGui::GetStyle().CellPadding.x - table_left;
+			auto group = -1;
+
+			for (const auto* player : players)
+			{
+				if (player->group != group)
+				{
+					group = player->group;
+
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::TextDisabled("Subgroup %d", group);
+				}
+
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+
+				auto profession = ProfessionIcons.find(player->profession);
+				auto* icon = profession != ProfessionIcons.end() ? addon::get_icon(profession->second) : nullptr;
+
+				// the white icons follow the text color of the theme
+				if (icon && icon->Resource)
+					ImGui::Image(icon->Resource, ImVec2(font_size, font_size), ImVec2(0, 0), ImVec2(1, 1), ImGui::GetStyleColorVec4(ImGuiCol_Text));
+				else
+					ImGui::Dummy(ImVec2(font_size, font_size));
+
+				ImGui::SameLine();
+				ImGui::TextUnformatted(player->name.c_str());
+
+				ImGui::TableNextColumn();
+				text_right(format_dps(player->boss_dps));
+				ImGui::TableNextColumn();
+				text_right(format_dps(player->cleave_dps));
+
+				if (display_settings.tooltip_downs_deaths)
+				{
+					ImGui::TableNextColumn();
+					text_right(std::to_string(player->downs));
+					ImGui::TableNextColumn();
+					text_right(std::to_string(player->deaths));
+				}
+
+				if (show_breakbar)
+				{
+					ImGui::TableNextColumn();
+					text_right(std::format("{:.0f}", player->breakbar_damage));
+				}
+
+				for (const auto* boon : boons)
+				{
+					auto uptime = player->boon_uptimes.contains(boon->id) ? player->boon_uptimes.at(boon->id) : 0.f;
+
+					ImGui::TableNextColumn();
+					text_right(boon->stacks ? std::format("{:.1f}", uptime) : std::format("{:.0f}%", uptime));
+				}
+			}
+
+			ImGui::EndTable();
+
+			// tooltips are sized to their content, leave room for the scrollbar of large squads
+			if (ImGui::GetScrollMaxY() > 0)
+				ImGui::Dummy(ImVec2(table_width + ImGui::GetStyle().ScrollbarSize, 0));
+		}
+
+		tooltip_size = ImGui::GetWindowSize();
+	}
+
+	ImGui::End();
 }
 
 void LogTableEntry::update_view()
