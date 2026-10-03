@@ -80,23 +80,27 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 	HandleGuard process_handle(pi.hProcess), thread_handle(pi.hThread);
 	write_pipe.close();
 
+	std::string output;
+
+	// read while the parser runs, it blocks once the pipe is full
+	std::thread output_thread([&]() {
+		CHAR buffer[4096];
+		DWORD bytes_read;
+
+		while (ReadFile(read_pipe.handle, buffer, sizeof(buffer), &bytes_read, NULL) && bytes_read > 0)
+			output.append(buffer, bytes_read);
+	});
+
 	constexpr int PARSE_TIMEOUT = 180000;
 
 	if (WaitForSingleObject(process_handle.handle, PARSE_TIMEOUT) == WAIT_TIMEOUT)
 	{
 		TerminateProcess(process_handle.handle, EXIT_FAILURE);
+		output_thread.join();
 		throw std::runtime_error("Elite Insights parser timeout. PID: " + std::to_string(pi.dwProcessId));
 	}
 
-	CHAR buffer[4096];
-	DWORD bytes_read;
-	std::string output;
-
-	while (ReadFile(read_pipe.handle, buffer, sizeof(buffer) - 1, &bytes_read, NULL))
-	{
-		buffer[bytes_read] = '\0';
-		output += buffer;
-	}
+	output_thread.join();
 
 	std::smatch matches;
 
@@ -204,7 +208,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 		if (std::regex_search(output, matches, failure_regex_message) && matches.size() > 1)
 			throw std::runtime_error("Parsing failed: " + matches[1].str());
 
-		return data;
+		throw std::runtime_error("Elite Insights did not generate a report");
 	}
 }
 
