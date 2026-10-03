@@ -14,7 +14,7 @@
 #define SETTINGS_FILE "Settings" / "settings.conf"
 #define VERSION_FILE ".version"
 
-#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(30))
+#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(30)), cpr::ProgressCallback([this](auto...) { return !cancelled.load(); })
 #define GITHUB_RELEASES_URL std::string("https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/")
 
 namespace {
@@ -91,12 +91,21 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 			output.append(buffer, bytes_read);
 	});
 
-	constexpr int PARSE_TIMEOUT = 180000;
+	auto timeout = std::chrono::steady_clock::now() + std::chrono::minutes(3);
+	auto finished = false;
 
-	if (WaitForSingleObject(process_handle.handle, PARSE_TIMEOUT) == WAIT_TIMEOUT)
+	// wait in short steps so unloading the addon can stop the parser
+	while (!finished && !cancelled.load() && std::chrono::steady_clock::now() < timeout)
+		finished = WaitForSingleObject(process_handle.handle, 100) != WAIT_TIMEOUT;
+
+	if (!finished)
 	{
 		TerminateProcess(process_handle.handle, EXIT_FAILURE);
 		output_thread.join();
+
+		if (cancelled.load())
+			throw std::runtime_error("Parsing cancelled");
+
 		throw std::runtime_error("Elite Insights parser timeout. PID: " + std::to_string(pi.dwProcessId));
 	}
 

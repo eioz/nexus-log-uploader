@@ -6,8 +6,7 @@
 
 IMPLEMENT_MODULE(WingmanUploader, wingman_uploader)
 
-#define CPR_PARAMETERS \
-	cpr::Timeout { std::chrono::seconds(180) }
+#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(180)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
 
 void WingmanUploader::add_log(std::shared_ptr<Log> log)
 {

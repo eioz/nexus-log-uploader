@@ -69,6 +69,7 @@ public:
 
 	ParserData parse(const std::filesystem::path& evtc_file_path);
 	void install();
+	void cancel() { cancelled.store(true); }
 
 private:
 	std::filesystem::path installation_directory;
@@ -78,6 +79,7 @@ private:
 	std::filesystem::path version_file;
 
 	std::atomic<bool> installed = false;
+	std::atomic<bool> cancelled = false;
 
 	EliteInsightsVersion get_local_version();
 	EliteInsightsVersion get_latest_version(ParserUpdateChannel update_channel);

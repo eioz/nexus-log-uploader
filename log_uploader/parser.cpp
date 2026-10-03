@@ -18,6 +18,8 @@ void Parser::release()
 {
 	loaded.store(false);
 
+	elite_insights.cancel();
+
 	clear_parser_queue();
 
 	parser_cv.notify_all();
@@ -58,7 +60,9 @@ void Parser::run()
 	}
 	catch (const std::exception& e)
 	{
-		addon::log("Failed to install Elite Insights: " + std::string(e.what()), LOGLEVEL_CRITICAL);
+		if (loaded.load())
+			addon::log("Failed to install Elite Insights: " + std::string(e.what()), LOGLEVEL_CRITICAL);
+
 		loaded.store(false);
 		return;
 	}
