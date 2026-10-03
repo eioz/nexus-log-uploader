@@ -164,6 +164,7 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="logs_table.cpp" />
     <ClCompile Include="log_manager.cpp" />
+    <ClCompile Include="session_manager.cpp" />
     <ClCompile Include="settings.cpp" />
     <ClCompile Include="ui_elements.cpp" />
     <ClCompile Include="main.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="evtc_parser.h" />
     <ClInclude Include="logs_table.h" />
     <ClInclude Include="log_manager.h" />
+    <ClInclude Include="session_manager.h" />
     <ClInclude Include="module.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="ui_elements.h" />

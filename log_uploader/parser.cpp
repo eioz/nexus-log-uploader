@@ -1,7 +1,8 @@
 #include "parser.h"
+#include "addon.h"
 #include "dps_report_uploader.h"
 #include "log_manager.h"
-#include "addon.h"
+#include "session_manager.h"
 #include "ui.h"
 #include "wingman_uploader.h"
 
@@ -93,7 +94,7 @@ void Parser::run()
 
 		try
 		{
-			auto parser_data = elite_insights.parse(evtc_file_path);
+			auto parser_data = elite_insights.parse(evtc_file_path, addon::session_manager->get_reports_directory(log));
 
 			{
 				std::unique_lock lock(log->mutex);

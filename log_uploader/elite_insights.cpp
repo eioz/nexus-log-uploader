@@ -11,7 +11,6 @@
 #include <fstream>
 
 #define INSTALLATION_DIRECTORY "elite-insights"
-#define OUTPUT_DIRECTORY "log-data"
 #define EXECUTABLE_FILE "GuildWars2EliteInsights-CLI.exe"
 #define SETTINGS_FILE "Settings" / "settings.conf"
 #define VERSION_FILE ".version"
@@ -87,7 +86,7 @@ std::vector<PlayerSummary> get_players(const nlohmann::json& json)
 }
 } // namespace
 
-ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
+ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, const std::filesystem::path& output_directory)
 {
 	ParserData data;
 
@@ -119,6 +118,8 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 	if (!std::filesystem::exists(output_directory))
 		if (!std::filesystem::create_directories(output_directory))
 			throw std::runtime_error("Failed to create Elite Insights output directory: " + output_directory.string());
+
+	write_settings(output_directory);
 
 	auto command = L"\"" + executable_file.wstring() + L"\" -c \"" + settings_file.wstring() + L"\" \"" + evtc_file_path.wstring() + L"\"";
 	std::vector<wchar_t> command_buffer(command.begin(), command.end());
@@ -276,14 +277,13 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 void EliteInsights::install()
 {
 	installation_directory = addon::directory / INSTALLATION_DIRECTORY;
-	output_directory = addon::directory / OUTPUT_DIRECTORY;
 
 	executable_file = installation_directory / EXECUTABLE_FILE;
 	settings_file = installation_directory / SETTINGS_FILE;
 	version_file = installation_directory / VERSION_FILE;
 
-	if (installation_directory.empty() || output_directory.empty())
-		throw std::runtime_error("Installation or output directory is empty");
+	if (installation_directory.empty())
+		throw std::runtime_error("Installation directory is empty");
 
 	if (!std::filesystem::exists(installation_directory))
 		if (!std::filesystem::create_directory(installation_directory))
@@ -294,7 +294,7 @@ void EliteInsights::install()
 	auto settings = addon::settings->get().parser;
 
 	auto local_version = get_local_version();
-	auto is_installed = [&] { return local_version.is_valid() && std::filesystem::exists(executable_file) && std::filesystem::exists(settings_file); };
+	auto is_installed = [&] { return local_version.is_valid() && std::filesystem::exists(executable_file); };
 
 	auto installed = is_installed();
 
@@ -383,27 +383,6 @@ void EliteInsights::install()
 			else
 				throw std::runtime_error("Failed to write version file: " + version_file.string());
 
-			std::ofstream settings_file_stream(settings_file, std::ios::out);
-
-			if (settings_file_stream)
-			{
-				std::stringstream custom_settings;
-				custom_settings << R"(# Custom settings
-SaveOutJSON=true
-IndentJSON=false
-SaveOutHTML=true
-SaveOutTrace=false
-SaveAtOut=false
-ParseCombatReplay=true
-SingleThreaded=false
-OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\)"), R"(\\)");
-
-				settings_file_stream << custom_settings.str();
-				settings_file_stream.close();
-			}
-			else
-				throw std::runtime_error("Failed to write settings file: " + settings_file.string());
-
 			local_version = get_local_version();
 
 			if (is_installed())
@@ -431,6 +410,32 @@ OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\
 		else
 			throw std::runtime_error("Elite Insights is not installed!");
 	}
+}
+
+void EliteInsights::write_settings(const std::filesystem::path& output_directory)
+{
+	std::filesystem::create_directories(settings_file.parent_path());
+
+	std::ofstream settings_file_stream(settings_file, std::ios::out);
+
+	if (settings_file_stream)
+	{
+		std::stringstream custom_settings;
+		custom_settings << R"(# Custom settings
+SaveOutJSON=true
+IndentJSON=false
+SaveOutHTML=true
+SaveOutTrace=false
+SaveAtOut=false
+ParseCombatReplay=true
+SingleThreaded=false
+OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\)"), R"(\\)");
+
+		settings_file_stream << custom_settings.str();
+		settings_file_stream.close();
+	}
+	else
+		throw std::runtime_error("Failed to write settings file: " + settings_file.string());
 }
 
 EliteInsightsVersion EliteInsights::get_local_version()

@@ -56,6 +56,9 @@
     <ClCompile Include="log_manager.cpp">
       <Filter>log manager</Filter>
     </ClCompile>
+    <ClCompile Include="session_manager.cpp">
+      <Filter>log manager</Filter>
+    </ClCompile>
     <ClCompile Include="dps_report_uploader.cpp">
       <Filter>log manager\uploaders</Filter>
     </ClCompile>
@@ -99,6 +102,9 @@
       <Filter>log manager\directory monitor</Filter>
     </ClInclude>
     <ClInclude Include="log_manager.h">
+      <Filter>log manager</Filter>
+    </ClInclude>
+    <ClInclude Include="session_manager.h">
       <Filter>log manager</Filter>
     </ClInclude>
     <ClInclude Include="log.h">

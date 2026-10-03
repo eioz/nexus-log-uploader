@@ -1,7 +1,8 @@
 #include "logs_table.h"
+#include "addon.h"
 #include "dps_report_uploader.h"
 #include "parser.h"
-#include "addon.h"
+#include "session_manager.h"
 #include "ui.h"
 #include "ui_elements.h"
 #include "wingman_uploader.h"
@@ -13,7 +14,7 @@ void LogsTable::render()
 {
 	std::lock_guard lock(mutex);
 
-	update_logs();
+	update_entries();
 
 	auto display_settings = addon::settings->get().display.log_table;
 
@@ -251,6 +252,30 @@ void LogsTable::render()
 		ImGui::PopStyleColor(2);
 
 	ImGui::End();
+}
+
+void LogsTable::update_entries()
+{
+	auto logs = addon::session_manager->get_logs();
+
+	auto changed = logs.size() != entries.size() || !std::equal(logs.begin(), logs.end(), entries.begin(), [](const auto& log, const auto& entry) { return log == entry.ptr; });
+
+	if (changed)
+	{
+		std::deque<LogTableEntry> updated_entries;
+
+		// existing entries keep their selection
+		for (const auto& log : logs)
+		{
+			auto existing = std::find_if(entries.begin(), entries.end(), [&](const auto& entry) { return entry.ptr == log; });
+			updated_entries.push_back(existing != entries.end() ? *existing : LogTableEntry(log));
+		}
+
+		entries = updated_entries;
+	}
+
+	for (auto& entry : entries)
+		entry.update();
 }
 
 void LogsTable::draw_context_menu()

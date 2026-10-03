@@ -28,7 +28,17 @@ public:
 	LogData data;
 	LogView view;
 
-	LogTableEntry(std::shared_ptr<Log> ptr) { this->ptr = ptr; }
+	LogTableEntry(std::shared_ptr<Log> ptr)
+	{
+		this->ptr = ptr;
+
+		{
+			std::shared_lock lock(ptr->mutex);
+			this->data = ptr->get_data();
+		}
+
+		update_view();
+	}
 
 	void update()
 	{
@@ -52,18 +62,6 @@ class LogsTable
 {
 public:
 	void render();
-
-	void add_log(std::shared_ptr<Log> log_ptr)
-	{
-		std::lock_guard<std::mutex> lock(mutex);
-		entries.push_front(log_ptr);
-	}
-
-	void remove_log(std::shared_ptr<Log> log_ptr)
-	{
-		std::lock_guard<std::mutex> lock(mutex);
-		entries.erase(std::remove_if(entries.begin(), entries.end(), [&](const LogTableEntry& entry) { return entry.ptr == log_ptr; }), entries.end());
-	}
 
 	void toggle_visibility()
 	{
@@ -92,14 +90,9 @@ private:
 
 	std::mutex mutex;
 
-	void update_logs()
-	{
-		for (auto& entry : entries)
-			entry.update();
-	}
-
 	std::deque<LogTableEntry> entries;
 
+	void update_entries();
 	void draw_context_menu();
 
 	enum Columns : uint8_t

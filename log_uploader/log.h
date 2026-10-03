@@ -2,10 +2,23 @@
 
 #include "evtc.h"
 
+#include <nlohmann/json.hpp>
+
 #include <atomic>
 #include <chrono>
 #include <filesystem>
 #include <shared_mutex>
+
+// time points are stored as milliseconds since epoch
+NLOHMANN_JSON_NAMESPACE_BEGIN
+template <>
+struct adl_serializer<std::chrono::system_clock::time_point>
+{
+	static void to_json(json& j, const std::chrono::system_clock::time_point& time) { j = std::chrono::duration_cast<std::chrono::milliseconds>(time.time_since_epoch()).count(); }
+
+	static void from_json(const json& j, std::chrono::system_clock::time_point& time) { time = std::chrono::system_clock::time_point(std::chrono::milliseconds(j.get<int64_t>())); }
+};
+NLOHMANN_JSON_NAMESPACE_END
 
 enum class ParseStatus
 {
@@ -55,12 +68,16 @@ public:
 	std::string user_token;
 
 	void open();
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(DpsReportUpload, status, url, id, error_message)
 };
 
 class WingmanUpload : public Upload
 {
 public:
 	UploadStatus status = UploadStatus::AVAILABLE;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanUpload, status, error_message)
 };
 
 class Encounter
@@ -76,6 +93,8 @@ public:
 
 	std::chrono::system_clock::time_point start_time{};
 	std::chrono::system_clock::time_point end_time{};
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(Encounter, name, account_name, duration_ms, success, has_boss, health_percent_burned, difficulty, start_time, end_time)
 };
 
 class PlayerSummary
@@ -91,6 +110,8 @@ public:
 	int deaths = 0;
 	double breakbar_damage = 0.0;
 	std::map<int, float> boon_uptimes; // average stacks for might and stability
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(PlayerSummary, name, account, profession, group, boss_dps, cleave_dps, downs, deaths, breakbar_damage, boon_uptimes)
 };
 
 class EVTCParserData
@@ -117,6 +138,8 @@ public:
 	bool is_success() const { return status == ParseStatus::PARSED && encounter.success; }
 
 	ParseStatus status = ParseStatus::UNPARSED;
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(ParserData, html_file_path, json_file_path, error_message, encounter, players, status)
 };
 
 using EncounterLogID = std::string;
@@ -129,6 +152,8 @@ public:
 	ParserData parser_data = ParserData();
 	DpsReportUpload dps_report_upload = DpsReportUpload();
 	WingmanUpload wingman_upload = WingmanUpload();
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(LogData, id, trigger_id, evtc_file_path, evtc_file_time, parser_data, dps_report_upload, wingman_upload)
 };
 
 class Log : public LogData
@@ -141,9 +166,15 @@ public:
 
 	LogData get_data() { return *this; }
 
-	void update_view() { view_updated_required.store(true); }
+	// also marks the log for saving with its session
+	void update_view()
+	{
+		view_updated_required.store(true);
+		save_required.store(true);
+	}
 
 	std::atomic<bool> view_updated_required = true;
+	std::atomic<bool> save_required = false;
 
 	mutable std::shared_mutex mutex;
 };

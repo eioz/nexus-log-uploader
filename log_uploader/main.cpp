@@ -5,6 +5,7 @@
 #include "log_manager.h"
 #include "parser.h"
 #include "resource.h"
+#include "session_manager.h"
 #include "settings.h"
 #include "ui.h"
 #include "wingman_uploader.h"
@@ -65,6 +66,7 @@ void load(AddonAPI_t* addon_api)
 	ImGui::SetAllocatorFunctions((void* (*)(size_t, void*))addon::api->ImguiMalloc, (void (*)(void*, void*))addon::api->ImguiFree);
 
 	addon::settings->initialize();
+	addon::session_manager->initialize();
 
 	addon::api->GUI_Register(RT_Render, render);
 	addon::api->GUI_Register(RT_OptionsRender, render_options);
@@ -90,6 +92,8 @@ void unload()
 	addon::parser->release();
 	addon::dps_report_uploader->release();
 	addon::wingman_uploader->release();
+
+	addon::session_manager->release();
 }
 
 AddonDefinition_t addon_definition;

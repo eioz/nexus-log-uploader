@@ -67,19 +67,20 @@ class EliteInsights
 public:
 	EliteInsights() = default;
 
-	ParserData parse(const std::filesystem::path& evtc_file_path);
+	ParserData parse(const std::filesystem::path& evtc_file_path, const std::filesystem::path& output_directory);
 	void install();
 	void cancel() { cancelled.store(true); }
 
 private:
 	std::filesystem::path installation_directory;
-	std::filesystem::path output_directory;
 	std::filesystem::path executable_file;
 	std::filesystem::path settings_file;
 	std::filesystem::path version_file;
 
 	std::atomic<bool> installed = false;
 	std::atomic<bool> cancelled = false;
+
+	void write_settings(const std::filesystem::path& output_directory);
 
 	EliteInsightsVersion get_local_version();
 	EliteInsightsVersion get_latest_version(ParserUpdateChannel update_channel);
