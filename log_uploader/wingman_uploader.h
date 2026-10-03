@@ -2,6 +2,8 @@
 
 #include "uploader.h"
 
+#define WINGMAN_URL "https://gw2wingman.nevermindcreations.de"
+
 class WingmanUploader : public Uploader
 {
 public:

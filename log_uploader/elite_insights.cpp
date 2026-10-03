@@ -1,6 +1,7 @@
 #include "elite_insights.h"
 #include "addon.h"
 #include "settings.h"
+#include "wingman_uploader.h"
 
 #include <cpr/cpr.h>
 #include <miniz/miniz.h>
@@ -15,7 +16,6 @@
 
 #define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(30))
 #define GITHUB_RELEASES_URL std::string("https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/")
-#define WINGMAN_VERSION_URL std::string("https://gw2wingman.nevermindcreations.de/api/EIversion")
 
 namespace {
 struct HandleGuard
@@ -433,11 +433,11 @@ EliteInsightsVersion EliteInsights::get_latest_version(ParserUpdateChannel updat
 
 	if (update_channel == ParserUpdateChannel::LATEST_WINGMAN)
 	{
-		const auto version_response = cpr::Get(cpr::Url{ WINGMAN_VERSION_URL }, CPR_PARAMETERS);
+		const auto version_response = cpr::Get(cpr::Url{ WINGMAN_URL "/api/EIversion" }, CPR_PARAMETERS);
 
 		if (version_response.status_code != 200)
 		{
-			addon::log("Failed to fetch version tag from " + WINGMAN_VERSION_URL + ". (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGLEVEL_WARNING);
+			addon::log("Failed to fetch version tag from " WINGMAN_URL "/api/EIversion. (" + (version_response.status_code ? std::to_string(version_response.status_code) : "timeout") + ")", LOGLEVEL_WARNING);
 			return version;
 		}
 

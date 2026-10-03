@@ -8,9 +8,6 @@ IMPLEMENT_MODULE(WingmanUploader, wingman_uploader)
 
 #define CPR_PARAMETERS \
 	cpr::Timeout { std::chrono::seconds(180) }
-#define TEST_CONNECTION_URL "https://gw2wingman.nevermindcreations.de/testConnection"
-#define CHECK_UPLOAD_URL "https://gw2wingman.nevermindcreations.de/checkUpload"
-#define UPLOAD_PROCESSED_URL "https://gw2wingman.nevermindcreations.de/uploadProcessed"
 
 void WingmanUploader::add_log(std::shared_ptr<Log> log)
 {
@@ -167,7 +164,7 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 		cpr::Multipart multipart = { { "file", log_data.evtc_file_path.filename().string() }, { "timestamp", std::to_string(file_creation_time) }, { "filesize", std::to_string(file_size) }, { "account", log_data.parser_data.encounter.account_name },
 			{ "triggerID", std::to_string(static_cast<int>(log_data.trigger_id)) } };
 
-		auto response = cpr::Post(cpr::Url(CHECK_UPLOAD_URL), CPR_PARAMETERS, multipart);
+		auto response = cpr::Post(cpr::Url(WINGMAN_URL "/checkUpload"), CPR_PARAMETERS, multipart);
 
 		if (response.status_code != 200)
 			throw std::runtime_error("Status " + std::to_string(response.status_code) + " on checkUpload");
@@ -191,7 +188,7 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 		cpr::Multipart multipart = { { "file", cpr::File(log_data.evtc_file_path.string(), log_data.evtc_file_path.filename().string()) }, { "jsonfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
 			{ "htmlfile", cpr::File(log_data.parser_data.html_file_path.string(), log_data.parser_data.html_file_path.filename().string()) }, { "account", log_data.parser_data.encounter.account_name } };
 
-		auto response = cpr::Post(cpr::Url(UPLOAD_PROCESSED_URL), CPR_PARAMETERS, multipart);
+		auto response = cpr::Post(cpr::Url(WINGMAN_URL "/uploadProcessed"), CPR_PARAMETERS, multipart);
 
 		if (response.status_code != 200)
 			throw std::runtime_error("Status " + std::to_string(response.status_code) + " on uploadProcessed");
@@ -217,7 +214,7 @@ bool WingmanUploader::get_server_availability()
 	{
 		last_check_time = current_time;
 
-		auto response = cpr::Get(cpr::Url(TEST_CONNECTION_URL), CPR_PARAMETERS);
+		auto response = cpr::Get(cpr::Url(WINGMAN_URL "/testConnection"), CPR_PARAMETERS);
 
 		servers_available_cached = (response.status_code == 200 && response.text == "True");
 
