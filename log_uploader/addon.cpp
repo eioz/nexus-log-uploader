@@ -56,4 +56,14 @@ std::filesystem::path get_log_directory()
 
 	return std::filesystem::path(boss_path) / "arcdps.cbtlogs";
 }
+
+std::string get_icon_texture(unsigned resource_id)
+{
+	return "LOG_UPLOADER_ICON_" + std::to_string(resource_id);
+}
+
+Texture_t* get_icon(unsigned resource_id)
+{
+	return api ? api->Textures_Get(get_icon_texture(resource_id).c_str()) : nullptr;
+}
 } // namespace addon

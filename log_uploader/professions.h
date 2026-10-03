@@ -1,0 +1,55 @@
+#pragma once
+
+#include "resource.h"
+
+#include <map>
+#include <string>
+
+// core professions and elite specializations as named by Elite Insights
+inline const std::map<std::string, unsigned> ProfessionIcons = {
+	{ "Guardian", IDR_PROFESSION_GUARDIAN },
+	{ "Dragonhunter", IDR_PROFESSION_DRAGONHUNTER },
+	{ "Firebrand", IDR_PROFESSION_FIREBRAND },
+	{ "Willbender", IDR_PROFESSION_WILLBENDER },
+	{ "Luminary", IDR_PROFESSION_LUMINARY },
+	{ "Revenant", IDR_PROFESSION_REVENANT },
+	{ "Herald", IDR_PROFESSION_HERALD },
+	{ "Renegade", IDR_PROFESSION_RENEGADE },
+	{ "Vindicator", IDR_PROFESSION_VINDICATOR },
+	{ "Conduit", IDR_PROFESSION_CONDUIT },
+	{ "Warrior", IDR_PROFESSION_WARRIOR },
+	{ "Berserker", IDR_PROFESSION_BERSERKER },
+	{ "Spellbreaker", IDR_PROFESSION_SPELLBREAKER },
+	{ "Bladesworn", IDR_PROFESSION_BLADESWORN },
+	{ "Paragon", IDR_PROFESSION_PARAGON },
+	{ "Engineer", IDR_PROFESSION_ENGINEER },
+	{ "Scrapper", IDR_PROFESSION_SCRAPPER },
+	{ "Holosmith", IDR_PROFESSION_HOLOSMITH },
+	{ "Mechanist", IDR_PROFESSION_MECHANIST },
+	{ "Amalgam", IDR_PROFESSION_AMALGAM },
+	{ "Ranger", IDR_PROFESSION_RANGER },
+	{ "Druid", IDR_PROFESSION_DRUID },
+	{ "Soulbeast", IDR_PROFESSION_SOULBEAST },
+	{ "Untamed", IDR_PROFESSION_UNTAMED },
+	{ "Galeshot", IDR_PROFESSION_GALESHOT },
+	{ "Thief", IDR_PROFESSION_THIEF },
+	{ "Daredevil", IDR_PROFESSION_DAREDEVIL },
+	{ "Deadeye", IDR_PROFESSION_DEADEYE },
+	{ "Specter", IDR_PROFESSION_SPECTER },
+	{ "Antiquary", IDR_PROFESSION_ANTIQUARY },
+	{ "Elementalist", IDR_PROFESSION_ELEMENTALIST },
+	{ "Tempest", IDR_PROFESSION_TEMPEST },
+	{ "Weaver", IDR_PROFESSION_WEAVER },
+	{ "Catalyst", IDR_PROFESSION_CATALYST },
+	{ "Evoker", IDR_PROFESSION_EVOKER },
+	{ "Mesmer", IDR_PROFESSION_MESMER },
+	{ "Chronomancer", IDR_PROFESSION_CHRONOMANCER },
+	{ "Mirage", IDR_PROFESSION_MIRAGE },
+	{ "Virtuoso", IDR_PROFESSION_VIRTUOSO },
+	{ "Troubadour", IDR_PROFESSION_TROUBADOUR },
+	{ "Necromancer", IDR_PROFESSION_NECROMANCER },
+	{ "Reaper", IDR_PROFESSION_REAPER },
+	{ "Scourge", IDR_PROFESSION_SCOURGE },
+	{ "Harbinger", IDR_PROFESSION_HARBINGER },
+	{ "Ritualist", IDR_PROFESSION_RITUALIST },
+};

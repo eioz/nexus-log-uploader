@@ -1,5 +1,7 @@
 #pragma once
 
+#include "resource.h"
+
 #include <cstdint>
 #include <map>
 #include <string>
@@ -132,6 +134,7 @@ struct EncounterDefinition
 {
 	std::string name;
 	std::vector<TriggerID> triggers;
+	unsigned icon = 0; // the resource of the encounter icon
 };
 
 struct EncounterInstance
@@ -150,121 +153,121 @@ struct EncounterCategory
 inline const std::vector<EncounterCategory> EncounterCategories = {
   { "Raids", {
     { "Spirit Vale", {
-      { "Vale Guardian", { TriggerID::ValeGuardian } },
-      { "Spirit Woods", { TriggerID::SpiritRace } },
-      { "Gorseval", { TriggerID::Gorseval } },
-      { "Sabetha the Saboteur", { TriggerID::SabethaTheSaboteur } },
+      { "Vale Guardian", { TriggerID::ValeGuardian }, IDR_ENCOUNTER_VALE_GUARDIAN },
+      { "Spirit Woods", { TriggerID::SpiritRace }, IDR_ENCOUNTER_SPIRIT_WOODS },
+      { "Gorseval", { TriggerID::Gorseval }, IDR_ENCOUNTER_GORSEVAL },
+      { "Sabetha the Saboteur", { TriggerID::SabethaTheSaboteur }, IDR_ENCOUNTER_SABETHA_THE_SABOTEUR },
     } },
     { "Salvation Pass", {
-      { "Slothasor", { TriggerID::Slothasor } },
-      { "Bandit Trio", { TriggerID::Berg, TriggerID::Zane, TriggerID::Narella } },
-      { "Matthias Gabrel", { TriggerID::MatthiasGabrel } },
+      { "Slothasor", { TriggerID::Slothasor }, IDR_ENCOUNTER_SLOTHASOR },
+      { "Bandit Trio", { TriggerID::Berg, TriggerID::Zane, TriggerID::Narella }, IDR_ENCOUNTER_BANDIT_TRIO },
+      { "Matthias Gabrel", { TriggerID::MatthiasGabrel }, IDR_ENCOUNTER_MATTHIAS_GABREL },
     } },
     { "Stronghold of the Faithful", {
-      { "Siege the Stronghold", { TriggerID::McLeodTheSilent } },
-      { "Keep Construct", { TriggerID::KeepConstruct } },
-      { "Twisted Castle", { TriggerID::TwistedCastle } },
-      { "Xera", { TriggerID::Xera } },
+      { "Siege the Stronghold", { TriggerID::McLeodTheSilent }, IDR_ENCOUNTER_SIEGE_THE_STRONGHOLD },
+      { "Keep Construct", { TriggerID::KeepConstruct }, IDR_ENCOUNTER_KEEP_CONSTRUCT },
+      { "Twisted Castle", { TriggerID::TwistedCastle }, IDR_ENCOUNTER_TWISTED_CASTLE },
+      { "Xera", { TriggerID::Xera }, IDR_ENCOUNTER_XERA },
     } },
     { "Bastion of the Penitent", {
-      { "Cairn the Indomitable", { TriggerID::CairnTheIndomitable } },
-      { "Mursaat Overseer", { TriggerID::MursaatOverseer } },
-      { "Samarog", { TriggerID::Samarog } },
-      { "Deimos", { TriggerID::Deimos } },
+      { "Cairn the Indomitable", { TriggerID::CairnTheIndomitable }, IDR_ENCOUNTER_CAIRN_THE_INDOMITABLE },
+      { "Mursaat Overseer", { TriggerID::MursaatOverseer }, IDR_ENCOUNTER_MURSAAT_OVERSEER },
+      { "Samarog", { TriggerID::Samarog }, IDR_ENCOUNTER_SAMAROG },
+      { "Deimos", { TriggerID::Deimos }, IDR_ENCOUNTER_DEIMOS },
     } },
     { "Hall of Chains", {
-      { "Soulless Horror", { TriggerID::SoullessHorror } },
-      { "River of Souls", { TriggerID::RiverOfSouls } },
-      { "Broken King", { TriggerID::BrokenKing } },
-      { "Eater of Souls", { TriggerID::EaterOfSouls } },
-      { "Statue of Darkness", { TriggerID::EyeOfFate, TriggerID::EyeOfJudgment } },
-      { "Dhuum", { TriggerID::Dhuum } },
+      { "Soulless Horror", { TriggerID::SoullessHorror }, IDR_ENCOUNTER_SOULLESS_HORROR },
+      { "River of Souls", { TriggerID::RiverOfSouls }, IDR_ENCOUNTER_RIVER_OF_SOULS },
+      { "Broken King", { TriggerID::BrokenKing }, IDR_ENCOUNTER_BROKEN_KING },
+      { "Eater of Souls", { TriggerID::EaterOfSouls }, IDR_ENCOUNTER_EATER_OF_SOULS },
+      { "Statue of Darkness", { TriggerID::EyeOfFate, TriggerID::EyeOfJudgment }, IDR_ENCOUNTER_STATUE_OF_DARKNESS },
+      { "Dhuum", { TriggerID::Dhuum }, IDR_ENCOUNTER_DHUUM },
     } },
     { "Mythwright Gambit", {
-      { "Conjured Amalgamate", { TriggerID::ConjuredAmalgamate } },
-      { "Twin Largos", { TriggerID::Nikare, TriggerID::Kenut } },
-      { "Qadim", { TriggerID::Qadim } },
+      { "Conjured Amalgamate", { TriggerID::ConjuredAmalgamate }, IDR_ENCOUNTER_CONJURED_AMALGAMATE },
+      { "Twin Largos", { TriggerID::Nikare, TriggerID::Kenut }, IDR_ENCOUNTER_TWIN_LARGOS },
+      { "Qadim", { TriggerID::Qadim }, IDR_ENCOUNTER_QADIM },
     } },
     { "The Key of Ahdashim", {
-      { "Cardinal Adina", { TriggerID::CardinalAdina } },
-      { "Cardinal Sabir", { TriggerID::CardinalSabir } },
-      { "Qadim the Peerless", { TriggerID::QadimThePeerless } },
+      { "Cardinal Adina", { TriggerID::CardinalAdina }, IDR_ENCOUNTER_CARDINAL_ADINA },
+      { "Cardinal Sabir", { TriggerID::CardinalSabir }, IDR_ENCOUNTER_CARDINAL_SABIR },
+      { "Qadim the Peerless", { TriggerID::QadimThePeerless }, IDR_ENCOUNTER_QADIM_THE_PEERLESS },
     } },
     { "Mount Balrior", {
-      { "Greer, the Blightbringer", { TriggerID::GreerTheBlightbringer } },
-      { "Decima, the Stormsinger", { TriggerID::DecimaTheStormsinger, TriggerID::GodsquallDecima } },
-      { "Ura, the Steamshrieker", { TriggerID::UraTheSteamshrieker } },
+      { "Greer, the Blightbringer", { TriggerID::GreerTheBlightbringer }, IDR_ENCOUNTER_GREER_THE_BLIGHTBRINGER },
+      { "Decima, the Stormsinger", { TriggerID::DecimaTheStormsinger, TriggerID::GodsquallDecima }, IDR_ENCOUNTER_DECIMA_THE_STORMSINGER },
+      { "Ura, the Steamshrieker", { TriggerID::UraTheSteamshrieker }, IDR_ENCOUNTER_URA_THE_STEAMSHRIEKER },
     } },
   } },
   { "Raids (Strike Missions)", {
     { "Core", {
-      { "Old Lion's Court", { TriggerID::PrototypeVermilion, TriggerID::PrototypeVermilionCM, TriggerID::PrototypeArsenite, TriggerID::PrototypeIndigo } },
+      { "Old Lion's Court", { TriggerID::PrototypeVermilion, TriggerID::PrototypeVermilionCM, TriggerID::PrototypeArsenite, TriggerID::PrototypeIndigo }, IDR_ENCOUNTER_OLD_LIONS_COURT },
     } },
     { "The Icebrood Saga", {
-      { "Shiverpeaks Pass", { TriggerID::IcebroodConstruct } },
-      { "Voice of the Fallen and Claw of the Fallen", { TriggerID::VoiceOfTheFallen, TriggerID::ClawOfTheFallen, TriggerID::VoiceAndClaw } },
-      { "Fraenir of Jormag", { TriggerID::FraenirOfJormag, TriggerID::IcebroodConstructSanctum } },
-      { "Boneskinner", { TriggerID::Boneskinner } },
-      { "Whisper of Jormag", { TriggerID::WhisperOfJormag } },
+      { "Shiverpeaks Pass", { TriggerID::IcebroodConstruct }, IDR_ENCOUNTER_SHIVERPEAKS_PASS },
+      { "Voice of the Fallen and Claw of the Fallen", { TriggerID::VoiceOfTheFallen, TriggerID::ClawOfTheFallen, TriggerID::VoiceAndClaw }, IDR_ENCOUNTER_VOICE_OF_THE_FALLEN_AND_CLAW_OF_THE_FALLEN },
+      { "Fraenir of Jormag", { TriggerID::FraenirOfJormag, TriggerID::IcebroodConstructSanctum }, IDR_ENCOUNTER_FRAENIR_OF_JORMAG },
+      { "Boneskinner", { TriggerID::Boneskinner }, IDR_ENCOUNTER_BONESKINNER },
+      { "Whisper of Jormag", { TriggerID::WhisperOfJormag }, IDR_ENCOUNTER_WHISPER_OF_JORMAG },
     } },
     { "End of Dragons", {
-      { "Aetherblade Hideout", { TriggerID::MaiTrin, TriggerID::EchoOfScarletBriar } },
-      { "Xunlai Jade Junkyard", { TriggerID::Ankka } },
-      { "Kaineng Overlook", { TriggerID::MinisterLi, TriggerID::MinisterLiCM, TriggerID::TheRitualist, TriggerID::TheMindblade, TriggerID::TheEnforcer, TriggerID::TheSniper, TriggerID::TheMechRider } },
-      { "Harvest Temple", { TriggerID::TheDragonvoid, TriggerID::VoidAmalgamate } },
+      { "Aetherblade Hideout", { TriggerID::MaiTrin, TriggerID::EchoOfScarletBriar }, IDR_ENCOUNTER_AETHERBLADE_HIDEOUT },
+      { "Xunlai Jade Junkyard", { TriggerID::Ankka }, IDR_ENCOUNTER_XUNLAI_JADE_JUNKYARD },
+      { "Kaineng Overlook", { TriggerID::MinisterLi, TriggerID::MinisterLiCM, TriggerID::TheRitualist, TriggerID::TheMindblade, TriggerID::TheEnforcer, TriggerID::TheSniper, TriggerID::TheMechRider }, IDR_ENCOUNTER_KAINENG_OVERLOOK },
+      { "Harvest Temple", { TriggerID::TheDragonvoid, TriggerID::VoidAmalgamate }, IDR_ENCOUNTER_HARVEST_TEMPLE },
     } },
     { "Secrets of the Obscure", {
-      { "Cosmic Observatory", { TriggerID::Dagda } },
-      { "Temple of Febe", { TriggerID::Cerus } },
+      { "Cosmic Observatory", { TriggerID::Dagda }, IDR_ENCOUNTER_COSMIC_OBSERVATORY },
+      { "Temple of Febe", { TriggerID::Cerus }, IDR_ENCOUNTER_TEMPLE_OF_FEBE },
     } },
     { "Visions of Eternity", {
-      { "Guardian's Glade", { TriggerID::KelaSeneschalOfWaves } },
+      { "Guardian's Glade", { TriggerID::KelaSeneschalOfWaves }, IDR_ENCOUNTER_GUARDIANS_GLADE },
     } },
   } },
   { "Fractals", {
     { "Nightmare", {
-      { "MAMA", { TriggerID::MAMA } },
-      { "Siax the Corrupted", { TriggerID::SiaxTheCorrupted } },
-      { "Ensolyss of the Endless Torment", { TriggerID::EnsolyssOfTheEndlessTorment } },
+      { "MAMA", { TriggerID::MAMA }, IDR_ENCOUNTER_MAMA },
+      { "Siax the Corrupted", { TriggerID::SiaxTheCorrupted }, IDR_ENCOUNTER_SIAX_THE_CORRUPTED },
+      { "Ensolyss of the Endless Torment", { TriggerID::EnsolyssOfTheEndlessTorment }, IDR_ENCOUNTER_ENSOLYSS_OF_THE_ENDLESS_TORMENT },
     } },
     { "Shattered Observatory", {
-      { "Skorvald the Shattered", { TriggerID::SkorvaldTheShattered } },
-      { "Artsariiv", { TriggerID::Artsariiv } },
-      { "Arkk", { TriggerID::Arkk } },
+      { "Skorvald the Shattered", { TriggerID::SkorvaldTheShattered }, IDR_ENCOUNTER_SKORVALD_THE_SHATTERED },
+      { "Artsariiv", { TriggerID::Artsariiv }, IDR_ENCOUNTER_ARTSARIIV },
+      { "Arkk", { TriggerID::Arkk }, IDR_ENCOUNTER_ARKK },
     } },
     { "Sunqua Peak", {
-      { "Ai, Keeper of the Peak", { TriggerID::AiKeeperOfThePeak } },
+      { "Ai, Keeper of the Peak", { TriggerID::AiKeeperOfThePeak }, IDR_ENCOUNTER_AI_KEEPER_OF_THE_PEAK },
     } },
     { "Silent Surf", {
-      { "Kanaxai", { TriggerID::Kanaxai, TriggerID::KanaxaiChallengeMode } },
+      { "Kanaxai", { TriggerID::Kanaxai, TriggerID::KanaxaiChallengeMode }, IDR_ENCOUNTER_KANAXAI },
     } },
     { "Lonely Tower", {
-      { "Eparch", { TriggerID::Eparch } },
+      { "Eparch", { TriggerID::Eparch }, IDR_ENCOUNTER_EPARCH },
     } },
   } },
   { "Other", {
     { "Convergences", {
-      { "Demon Knight", { TriggerID::DemonKnight } },
-      { "Sorrow", { TriggerID::Sorrow } },
-      { "Dreadwing", { TriggerID::Dreadwing } },
-      { "Hell Sister", { TriggerID::HellSister } },
-      { "Umbriel, Halberd of House Aurkus", { TriggerID::Umbriel } },
+      { "Demon Knight", { TriggerID::DemonKnight }, IDR_ENCOUNTER_CONVERGENCE },
+      { "Sorrow", { TriggerID::Sorrow }, IDR_ENCOUNTER_CONVERGENCE },
+      { "Dreadwing", { TriggerID::Dreadwing }, IDR_ENCOUNTER_CONVERGENCE },
+      { "Hell Sister", { TriggerID::HellSister }, IDR_ENCOUNTER_CONVERGENCE },
+      { "Umbriel, Halberd of House Aurkus", { TriggerID::Umbriel }, IDR_ENCOUNTER_CONVERGENCE },
     } },
     { "Special Forces Training Area", {
-      { "Standard Kitty Golem", { TriggerID::StandardKittyGolem } },
-      { "Medium Kitty Golem", { TriggerID::MediumKittyGolem } },
-      { "Large Kitty Golem", { TriggerID::LargeKittyGolem } },
+      { "Standard Kitty Golem", { TriggerID::StandardKittyGolem }, IDR_ENCOUNTER_STANDARD_KITTY_GOLEM },
+      { "Medium Kitty Golem", { TriggerID::MediumKittyGolem }, IDR_ENCOUNTER_MEDIUM_KITTY_GOLEM },
+      { "Large Kitty Golem", { TriggerID::LargeKittyGolem }, IDR_ENCOUNTER_LARGE_KITTY_GOLEM },
     } },
     { "World vs World", {
-      { "World vs. World", { TriggerID::WorldVsWorld } },
+      { "World vs. World", { TriggerID::WorldVsWorld }, IDR_ENCOUNTER_WORLD_VS_WORLD },
     } },
     { "Open World", {
-      { "Soo-Won", { TriggerID::SooWon } },
+      { "Soo-Won", { TriggerID::SooWon }, IDR_ENCOUNTER_SOO_WON },
     } },
     { "Uncategorized", {
-      { "Freezie", { TriggerID::Freezie } },
+      { "Freezie", { TriggerID::Freezie }, IDR_ENCOUNTER_FREEZIE },
       { "Dreg Shark", { TriggerID::DregShark } },
-      { "Hearts and Minds", { TriggerID::HeartsAndMinds } },
+      { "Hearts and Minds", { TriggerID::HeartsAndMinds }, IDR_ENCOUNTER_HEARTS_AND_MINDS },
     } },
   } },
 };
@@ -277,5 +280,16 @@ inline const std::map<TriggerID, std::string> EncounterNames = []() {
 			for (const auto& encounter : instance.encounters)
 				for (const auto& trigger : encounter.triggers)
 					result.emplace(trigger, encounter.name);
+	return result;
+}();
+
+inline const std::map<TriggerID, unsigned> EncounterIcons = []() {
+	std::map<TriggerID, unsigned> result;
+	for (const auto& category : EncounterCategories)
+		for (const auto& instance : category.instances)
+			for (const auto& encounter : instance.encounters)
+				for (const auto& trigger : encounter.triggers)
+					if (encounter.icon)
+						result.emplace(trigger, encounter.icon);
 	return result;
 }();

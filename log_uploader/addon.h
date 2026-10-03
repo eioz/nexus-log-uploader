@@ -35,4 +35,8 @@ extern Mumble::Data* mumble;
 void log(const std::string& message, LogLevel level);
 void log(const char* message, LogLevel level);
 std::filesystem::path get_log_directory();
+
+// embedded icons are loaded as textures named after their resource id
+std::string get_icon_texture(unsigned resource_id);
+Texture_t* get_icon(unsigned resource_id);
 } // namespace addon

@@ -1,9 +1,12 @@
 #include "addon.h"
 
+#include "boons.h"
 #include "directory_monitor.h"
 #include "dps_report_uploader.h"
+#include "evtc.h"
 #include "log_manager.h"
 #include "parser.h"
+#include "professions.h"
 #include "resource.h"
 #include "session_manager.h"
 #include "settings.h"
@@ -11,6 +14,8 @@
 #include "wingman_uploader.h"
 
 #include <Nexus.h>
+
+#include <set>
 
 #define HOTKEY_UI "Open Log Uploader"
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
@@ -54,6 +59,26 @@ void load(AddonAPI_t* addon_api)
 			if (void* ptr = LockResource(hdata))
 				addon::api->Textures_LoadFromMemory(QUICK_ACCESS_TEXTURE, ptr, SizeofResource(addon_module, hres), nullptr);
 	addon::api->QuickAccess_Add(QUICK_ACCESS_UI, QUICK_ACCESS_TEXTURE, QUICK_ACCESS_TEXTURE, HOTKEY_UI, "Log Uploader");
+
+	auto load_icon = [](unsigned resource_id) { addon::api->Textures_LoadFromResource(addon::get_icon_texture(resource_id).c_str(), resource_id, addon_module, nullptr); };
+
+	for (const auto& boon : Boons)
+		load_icon(boon.icon);
+
+	for (const auto& [profession, icon] : ProfessionIcons)
+		load_icon(icon);
+
+	for (auto icon : { IDR_COMBAT_DOWNED, IDR_COMBAT_DEAD, IDR_COMBAT_CC })
+		load_icon(icon);
+
+	// encounters can share an icon
+	std::set<unsigned> encounter_icons;
+
+	for (const auto& [trigger_id, icon] : EncounterIcons)
+		encounter_icons.insert(icon);
+
+	for (auto icon : encounter_icons)
+		load_icon(icon);
 
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))

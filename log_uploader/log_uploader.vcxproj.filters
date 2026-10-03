@@ -92,6 +92,9 @@
     <ClInclude Include="boons.h">
       <Filter>log manager\parser</Filter>
     </ClInclude>
+    <ClInclude Include="professions.h">
+      <Filter>log manager\parser</Filter>
+    </ClInclude>
     <ClInclude Include="ui_elements.h">
       <Filter>log manager\ui</Filter>
     </ClInclude>

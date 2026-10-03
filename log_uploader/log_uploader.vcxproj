@@ -183,6 +183,7 @@
     <ClInclude Include="evtc_parser.h" />
     <ClInclude Include="logs_table.h" />
     <ClInclude Include="log_manager.h" />
+    <ClInclude Include="professions.h" />
     <ClInclude Include="session_manager.h" />
     <ClInclude Include="module.h" />
     <ClInclude Include="settings.h" />
