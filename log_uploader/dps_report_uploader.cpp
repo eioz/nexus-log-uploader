@@ -110,7 +110,9 @@ void DPSReportUploader::run()
 						{
 							memcpy(locked, upload.url.c_str(), upload.url.size() + 1);
 							GlobalUnlock(hg);
-							SetClipboardData(CF_TEXT, hg);
+
+							if (!SetClipboardData(CF_TEXT, hg))
+								GlobalFree(hg);
 						}
 						else
 						{
