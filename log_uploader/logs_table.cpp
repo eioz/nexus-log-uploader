@@ -790,23 +790,26 @@ void LogsTable::draw_tooltip(const SettingsData::Display::LogTable& display_sett
 		ImGui::TextDisabled("| %s | %s", entry->view.duration.c_str(), std::format("{:%d %b %Y, %H:%M}", end_time).c_str());
 
 		auto& statistics = entry->data.wingman_statistics;
-		std::string durations;
+		std::string details;
 
 		if (statistics.median_duration_ms && statistics.best_duration_ms)
-			durations = std::format("Median {} | Best {}", format_duration(*statistics.median_duration_ms), format_duration(*statistics.best_duration_ms));
+			details = std::format("Median {} | Best {}", format_duration(*statistics.median_duration_ms), format_duration(*statistics.best_duration_ms));
+
+		if (!statistics.era.empty())
+			details += (details.empty() ? "Era " : " | Era ") + statistics.era;
 
 		if (statistics.kill_percentile)
 		{
 			ImGui::TextColored(get_percentile_color(*statistics.kill_percentile), "Faster than %d%% of kills", *statistics.kill_percentile);
 
-			if (!durations.empty())
+			if (!details.empty())
 			{
 				ImGui::SameLine();
-				ImGui::TextDisabled("| %s", durations.c_str());
+				ImGui::TextDisabled("| %s", details.c_str());
 			}
 		}
-		else if (!durations.empty())
-			ImGui::TextDisabled("%s", durations.c_str());
+		else if (!details.empty())
+			ImGui::TextDisabled("%s", details.c_str());
 
 		ImGui::EndGroup();
 		ImGui::Spacing();

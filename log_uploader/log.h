@@ -84,6 +84,7 @@ public:
 class WingmanStatistics
 {
 public:
+	std::string era; // balance patch, for example 26-07
 	std::optional<int> kill_percentile;
 	std::optional<int> median_duration_ms;
 	std::optional<int> best_duration_ms;
@@ -91,7 +92,7 @@ public:
 	std::map<std::string, std::string> ranks;   // by account, empty for players without a rank
 	std::map<std::string, int> dps_percentiles; // by account, compared with the same profession
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, kill_percentile, median_duration_ms, best_duration_ms, ranks, dps_percentiles)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, era, kill_percentile, median_duration_ms, best_duration_ms, ranks, dps_percentiles)
 };
 
 class Encounter

@@ -199,7 +199,7 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				statistics.kill_percentile = std::clamp(*percentile, 0, 100);
 		}
 
-		if (!statistics.median_duration_ms)
+		if (statistics.era.empty())
 		{
 			auto era = get_era(encounter.start_time);
 			auto key = boss_id;
@@ -214,6 +214,7 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 			if (boss.is_null())
 				boss = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/boss"), cpr::Parameters{ { "era", era }, { "bossID", key } }, CPR_API_PARAMETERS));
 
+			statistics.era = era;
 			statistics.median_duration_ms = get_number(boss, "duration_med");
 			statistics.best_duration_ms = get_number(boss, "duration_top");
 		}
@@ -228,7 +229,7 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				auto account = cpr::util::urlEncode(player.account);
 				auto response = cpr::Get(cpr::Url(WINGMAN_URL "/api/playerRanks/current/" + std::string(account.begin(), account.end())), CPR_API_PARAMETERS);
 
-				// players are ranked once they ask wingman for it
+				// players have no rank until someone presses rerank on their wingman profile
 				auto rank = response.status_code == 404 ? nlohmann::json() : get_json(response).value("globalRank", nlohmann::json());
 
 				ranks[player.account] = rank.is_string() && rank != "-" ? rank.get<std::string>() : "";
