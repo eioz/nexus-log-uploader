@@ -810,26 +810,48 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 		// saved statistics stay hidden while wingman is turned off
 		static const WingmanStatistics no_statistics;
 		auto& statistics = settings.wingman.enabled ? entry->data.wingman_statistics : no_statistics;
-		std::string details;
 
-		if (statistics.median_duration_ms && statistics.best_duration_ms)
-			details = std::format("Median {} | Best {}", format_duration(*statistics.median_duration_ms), format_duration(*statistics.best_duration_ms));
-
-		if (!statistics.era.empty())
-			details += (details.empty() ? "Era " : " | Era ") + statistics.era;
+		// parts without a color are shown disabled
+		std::vector<std::pair<std::string, std::optional<ImVec4>>> parts;
 
 		if (statistics.kill_percentile)
-		{
-			ImGui::TextColored(get_percentile_color(*statistics.kill_percentile), "Faster than %d%% of kills", *statistics.kill_percentile);
+			parts.emplace_back(std::format("Faster than {}% of kills", *statistics.kill_percentile), get_percentile_color(*statistics.kill_percentile));
 
-			if (!details.empty())
-			{
-				ImGui::SameLine();
-				ImGui::TextDisabled("| %s", details.c_str());
-			}
+		if (statistics.median_duration_ms && statistics.best_duration_ms)
+		{
+			parts.emplace_back("Median " + format_duration(*statistics.median_duration_ms), std::nullopt);
+			parts.emplace_back("Best " + format_duration(*statistics.best_duration_ms) + (statistics.best_group.empty() ? "" : " (" + statistics.best_group + ")"), std::nullopt);
 		}
-		else if (!details.empty())
-			ImGui::TextDisabled("%s", details.c_str());
+
+		// another upload of this fight can be slightly shorter
+		if (statistics.personal_best_ms)
+		{
+			if (encounter.duration_ms <= *statistics.personal_best_ms + 1000)
+				parts.emplace_back("Personal best", get_percentile_color(100));
+			else
+				parts.emplace_back("PB " + format_duration(*statistics.personal_best_ms), std::nullopt);
+		}
+
+		if (!statistics.era.empty())
+			parts.emplace_back("Era " + statistics.era, std::nullopt);
+
+		// separated like the text in the line above
+		auto space = ImGui::CalcTextSize(" ").x;
+
+		for (size_t i = 0; i < parts.size(); ++i)
+		{
+			if (i > 0)
+			{
+				ImGui::SameLine(0.f, space);
+				ImGui::TextDisabled("|");
+				ImGui::SameLine(0.f, space);
+			}
+
+			if (parts[i].second)
+				ImGui::TextColored(*parts[i].second, "%s", parts[i].first.c_str());
+			else
+				ImGui::TextDisabled("%s", parts[i].first.c_str());
+		}
 
 		ImGui::EndGroup();
 		ImGui::Spacing();

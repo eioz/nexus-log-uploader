@@ -184,6 +184,14 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 	auto url = data.wingman_upload.url;
 	auto boss_id = std::to_string(static_cast<int>(data.trigger_id));
 
+	// challenge modes have their own statistics
+	auto key = boss_id;
+
+	if (encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE)
+		key = "-" + boss_id;
+	else if (encounter.difficulty == EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
+		key = "--" + boss_id;
+
 	// missing statistics are requested again with the next update, the first error stops this one
 	try
 	{
@@ -204,21 +212,31 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 		if (statistics.era.empty())
 		{
 			auto era = get_era(encounter.start_time);
-			auto key = boss_id;
-
-			if (encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE)
-				key = "-" + boss_id;
-			else if (encounter.difficulty == EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
-				key = "--" + boss_id;
-
 			auto& boss = bosses[era + " " + key];
 
 			if (boss.is_null())
 				boss = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/boss"), cpr::Parameters{ { "era", era }, { "bossID", key } }, CPR_API_PARAMETERS));
 
+			std::string best_group;
+
+			for (const auto& group : boss.value("group_top", nlohmann::json::array()))
+				if (group.is_string())
+					best_group += (best_group.empty() ? "" : ", ") + group.get<std::string>();
+
 			statistics.era = era;
 			statistics.median_duration_ms = get_number(boss, "duration_med");
 			statistics.best_duration_ms = get_number(boss, "duration_top");
+			statistics.best_group = best_group;
+		}
+
+		if (!statistics.personal_best_ms && encounter.success && !statistics.era.empty() && !encounter.account_name.empty())
+		{
+			auto json = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/getPlayerProfessionStats"), cpr::Parameters{ { "account", encounter.account_name }, { "era", statistics.era } }, CPR_API_PARAMETERS));
+			auto pointer = nlohmann::json::json_pointer("/topBossTimes/" + statistics.era + "/" + key);
+
+			// without an earlier kill on wingman there is no personal best
+			if (json.contains(pointer))
+				statistics.personal_best_ms = get_number(json.at(pointer), "durationMS");
 		}
 
 		for (const auto& player : data.parser_data.players)
