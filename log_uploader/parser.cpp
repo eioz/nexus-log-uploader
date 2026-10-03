@@ -36,8 +36,8 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 	std::unique_lock lock(log->mutex);
 
-	// logs of archived sessions can be parsed again
-	auto parsable = log->parser_data.status == ParseStatus::UNPARSED || (log->parser_data.status == ParseStatus::PARSED && !log->parser_data.has_report());
+	// failed logs and logs of archived sessions can be parsed again
+	auto parsable = log->parser_data.status == ParseStatus::UNPARSED || log->parser_data.status == ParseStatus::FAILED || (log->parser_data.status == ParseStatus::PARSED && !log->parser_data.has_report());
 
 	if (!parsable)
 	{
@@ -46,6 +46,7 @@ void Parser::add_log(std::shared_ptr<Log> log)
 	}
 
 	log->parser_data.status = ParseStatus::QUEUED;
+	log->parser_data.error_message.reset();
 
 	{
 		std::unique_lock parser_queue_lock(parser_queue_mutex);
@@ -116,7 +117,8 @@ void Parser::run()
 		catch (const std::exception& e)
 		{
 			std::unique_lock lock(log->mutex);
-			log->parser_data.status = ParseStatus::FAILED;
+			// logs of archived sessions keep their summary
+			log->parser_data.status = log->parser_data.encounter.name.empty() ? ParseStatus::FAILED : ParseStatus::PARSED;
 			log->parser_data.error_message = e.what();
 			addon::log("Failed to parse log with Elite Insights: " + log->id + " Exception: " + e.what(), LOGLEVEL_WARNING);
 			log->update_view();

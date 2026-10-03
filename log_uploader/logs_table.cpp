@@ -388,7 +388,7 @@ void LogsTable::draw_context_menu()
 							action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)].push_back(e);
 						}
 					}
-					else if (e.data.parser_data.status == ParseStatus::UNPARSED || e.data.parser_data.status == ParseStatus::PARSED)
+					else if (e.data.parser_data.status == ParseStatus::UNPARSED || e.data.parser_data.status == ParseStatus::PARSED || e.data.parser_data.status == ParseStatus::FAILED)
 					{
 						action_logs[static_cast<size_t>(LogAction::PARSE)].push_back(e);
 					}
