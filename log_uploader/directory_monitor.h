@@ -15,6 +15,7 @@ public:
 private:
 	std::thread monitor_thread;
 	OVERLAPPED monitor_overlapped = { 0 };
+	HANDLE stop_event = NULL;
 	std::filesystem::path monitor_directory;
 
 	void run();

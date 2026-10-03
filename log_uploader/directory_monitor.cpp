@@ -33,6 +33,14 @@ void DirectoryMonitor::initialize()
 		}
 	}
 
+	stop_event = CreateEvent(nullptr, TRUE, FALSE, nullptr);
+
+	if (stop_event == NULL)
+	{
+		addon::log("Failed to create directory monitor stop event", LOGLEVEL_CRITICAL);
+		return;
+	}
+
 	initialized.store(true);
 
 	addon::log("Monitoring directory: " + monitor_directory.string(), LOGLEVEL_INFO);
@@ -44,11 +52,17 @@ void DirectoryMonitor::release()
 {
 	initialized.store(false);
 
-	if (monitor_overlapped.hEvent != NULL)
-		SetEvent(monitor_overlapped.hEvent);
+	if (stop_event != NULL)
+		SetEvent(stop_event);
 
 	if (monitor_thread.joinable())
 		monitor_thread.join();
+
+	if (stop_event != NULL)
+	{
+		CloseHandle(stop_event);
+		stop_event = NULL;
+	}
 
 	monitor_overlapped = { 0 };
 	monitor_directory.clear();
@@ -94,18 +108,24 @@ void DirectoryMonitor::run()
 			break;
 		}
 
-		auto wait_result = WaitForSingleObject(monitor_overlapped.hEvent, INFINITE);
+		HANDLE events[] = { stop_event, monitor_overlapped.hEvent };
 
-		if (!this->initialized.load() || monitor_overlapped.hEvent == NULL)
-			break;
+		auto wait_result = WaitForMultipleObjects(2, events, FALSE, INFINITE);
 
-		if (wait_result == WAIT_OBJECT_0)
+		if (wait_result == WAIT_OBJECT_0 + 1)
 		{
 			DWORD bytes_transferred;
 
 			if (GetOverlappedResult(directory_handle, &monitor_overlapped, &bytes_transferred, TRUE))
 			{
 				ResetEvent(monitor_overlapped.hEvent);
+
+				// zero bytes means the buffer overflowed and the changes are lost
+				if (bytes_transferred == 0)
+				{
+					addon::log("Directory changes overflowed, new logs may have been missed", LOGLEVEL_WARNING);
+					continue;
+				}
 
 				auto* fni = reinterpret_cast<FILE_NOTIFY_INFORMATION*>(buffer.data());
 
@@ -152,12 +172,20 @@ void DirectoryMonitor::run()
 				} while (fni != nullptr && this->initialized.load());
 			}
 		}
-		else if (wait_result == WAIT_FAILED)
+		else
 		{
-			addon::log("WaitForSingleObject failed", LOGLEVEL_CRITICAL);
+			if (wait_result == WAIT_FAILED)
+				addon::log("WaitForMultipleObjects failed", LOGLEVEL_CRITICAL);
+
 			break;
 		}
 	}
+
+	// cancel the pending read before its buffer is released
+	CancelIoEx(directory_handle, &monitor_overlapped);
+
+	DWORD bytes_transferred;
+	GetOverlappedResult(directory_handle, &monitor_overlapped, &bytes_transferred, TRUE);
 
 	if (monitor_overlapped.hEvent != NULL)
 	{
