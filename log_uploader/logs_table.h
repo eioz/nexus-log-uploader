@@ -92,8 +92,12 @@ private:
 
 	std::deque<LogTableEntry> entries;
 
+	std::string viewed_session_id; // empty for the current session
+	std::string viewed_session_name;
+
 	void update_entries();
 	void draw_context_menu();
+	void draw_session_menu();
 
 	enum Columns : uint8_t
 	{

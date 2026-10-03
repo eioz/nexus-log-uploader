@@ -54,6 +54,9 @@ SessionFile read_session(const std::filesystem::path& path)
 {
 	auto file = read_json(path).get<SessionFile>();
 
+	// the directory name identifies the session
+	file.info.id = path.parent_path().filename().string();
+
 	// work that was still queued or running when the addon was unloaded
 	for (auto& data : file.logs)
 	{
@@ -120,24 +123,16 @@ void SessionManager::initialize()
 
 	if (latest != sessions.end() && std::chrono::system_clock::now() - latest->second.end_time < SESSION_TIMEOUT)
 	{
-		try
-		{
-			auto file = read_session(sessions_directory / latest->first / SESSION_FILE);
+		auto id = latest->first;
 
-			for (const auto& data : file.logs)
-				session_logs[latest->first].push_back(std::make_shared<Log>(data));
+		load_session(id);
 
-			sessions[latest->first] = file.info;
-			current_session_id = latest->first;
-		}
-		catch (const std::exception& e)
-		{
-			addon::log("Failed to load session " + latest->first + ": " + e.what(), LOGLEVEL_WARNING);
-		}
+		if (session_logs.contains(id))
+			current_session_id = id;
 	}
 
 	running = true;
-	save_thread = std::thread(&SessionManager::run, this);
+	session_thread = std::thread(&SessionManager::run, this);
 }
 
 void SessionManager::release()
@@ -147,10 +142,10 @@ void SessionManager::release()
 		running = false;
 	}
 
-	save_cv.notify_all();
+	session_cv.notify_all();
 
-	if (save_thread.joinable())
-		save_thread.join();
+	if (session_thread.joinable())
+		session_thread.join();
 
 	save();
 }
@@ -177,13 +172,50 @@ void SessionManager::add_log(std::shared_ptr<Log> log)
 	changed_sessions.insert(current_session_id);
 }
 
-std::deque<std::shared_ptr<Log>> SessionManager::get_logs()
+void SessionManager::start_new_session()
+{
+	std::lock_guard lock(mutex);
+	current_session_id.clear();
+}
+
+std::vector<SessionInfo> SessionManager::get_sessions()
 {
 	std::lock_guard lock(mutex);
 
-	auto it = session_logs.find(current_session_id);
+	std::vector<SessionInfo> result;
 
-	return it != session_logs.end() ? it->second : std::deque<std::shared_ptr<Log>>();
+	for (const auto& [id, info] : sessions)
+		result.push_back(info);
+
+	std::sort(result.begin(), result.end(), [](const auto& a, const auto& b) { return a.start_time > b.start_time; });
+
+	return result;
+}
+
+std::deque<std::shared_ptr<Log>> SessionManager::get_logs(const std::string& session_id)
+{
+	std::lock_guard lock(mutex);
+
+	auto id = session_id.empty() ? current_session_id : session_id;
+	auto it = session_logs.find(id);
+
+	if (it != session_logs.end())
+		return it->second;
+
+	// older sessions are loaded in the background when they are first viewed
+	if (sessions.contains(id))
+	{
+		load_requests.insert(id);
+		session_cv.notify_one();
+	}
+
+	return {};
+}
+
+std::string SessionManager::get_current_session_id()
+{
+	std::lock_guard lock(mutex);
+	return current_session_id;
 }
 
 std::filesystem::path SessionManager::get_reports_directory(std::shared_ptr<Log> log)
@@ -203,11 +235,48 @@ void SessionManager::run()
 
 	while (running)
 	{
-		save_cv.wait_for(lock, std::chrono::seconds(1));
+		session_cv.wait_for(lock, std::chrono::seconds(1), [this] { return !running || !load_requests.empty(); });
+
+		auto requested_sessions = load_requests;
+		load_requests.clear();
 
 		lock.unlock();
+
+		for (const auto& id : requested_sessions)
+			load_session(id);
+
 		save();
+
 		lock.lock();
+	}
+}
+
+void SessionManager::load_session(const std::string& id)
+{
+	try
+	{
+		auto file = read_session(sessions_directory / id / SESSION_FILE);
+
+		std::deque<std::shared_ptr<Log>> logs;
+
+		for (const auto& data : file.logs)
+			logs.push_back(std::make_shared<Log>(data));
+
+		std::lock_guard lock(mutex);
+
+		if (sessions.contains(id) && !session_logs.contains(id))
+		{
+			sessions[id] = file.info;
+			session_logs[id] = logs;
+		}
+	}
+	catch (const std::exception& e)
+	{
+		addon::log("Failed to load session " + id + ": " + e.what(), LOGLEVEL_WARNING);
+
+		// hide it instead of retrying, its files stay untouched
+		std::lock_guard lock(mutex);
+		sessions.erase(id);
 	}
 }
 

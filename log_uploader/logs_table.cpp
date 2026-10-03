@@ -100,6 +100,15 @@ void LogsTable::render()
 				ImGui::SetWindowSize(window_size);
 		}
 
+		if (!viewed_session_id.empty())
+		{
+			if (ImGui::SmallButton("Back"))
+				viewed_session_id.clear();
+
+			ImGui::SameLine();
+			ImGui::TextUnformatted(viewed_session_name.c_str());
+		}
+
 		auto table_flags = ImGuiTableFlags_Borders | ImGuiTableFlags_Resizable;
 
 		if (display_settings.alternate_row_backgrounds)
@@ -256,7 +265,7 @@ void LogsTable::render()
 
 void LogsTable::update_entries()
 {
-	auto logs = addon::session_manager->get_logs();
+	auto logs = addon::session_manager->get_logs(viewed_session_id);
 
 	auto changed = logs.size() != entries.size() || !std::equal(logs.begin(), logs.end(), entries.begin(), [](const auto& log, const auto& entry) { return log == entry.ptr; });
 
@@ -504,8 +513,46 @@ void LogsTable::draw_context_menu()
 	}
 
 	ImGui::Separator();
+	draw_session_menu();
+	ImGui::Separator();
 	addon::ui->render_context_menu();
 	ImGui::EndPopup();
+}
+
+void LogsTable::draw_session_menu()
+{
+	if (!ImGui::BeginMenu("Sessions"))
+		return;
+
+	if (ImGui::MenuItem("New session"))
+	{
+		addon::session_manager->start_new_session();
+		viewed_session_id.clear();
+	}
+
+	ImGui::Separator();
+
+	static const auto get_session_name = [](const SessionInfo& session) {
+		std::chrono::zoned_time local_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::minutes>(session.start_time) };
+		return std::format("{:%a %d %b %Y, %H:%M} ({})", local_time, session.log_count);
+	};
+
+	auto current_session_id = addon::session_manager->get_current_session_id();
+
+	for (const auto& session : addon::session_manager->get_sessions())
+	{
+		ImGui::ID id(session.id);
+
+		auto viewed = viewed_session_id.empty() ? session.id == current_session_id : session.id == viewed_session_id;
+
+		if (ImGui::MenuItem(get_session_name(session).c_str(), nullptr, viewed))
+		{
+			viewed_session_id = session.id == current_session_id ? "" : session.id;
+			viewed_session_name = get_session_name(session);
+		}
+	}
+
+	ImGui::EndMenu();
 }
 
 void LogTableEntry::update_view()

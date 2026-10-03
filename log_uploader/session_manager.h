@@ -9,6 +9,7 @@
 #include <mutex>
 #include <set>
 #include <thread>
+#include <vector>
 
 struct SessionInfo
 {
@@ -27,25 +28,30 @@ public:
 	void release();
 
 	void add_log(std::shared_ptr<Log> log);
+	void start_new_session();
 
-	std::deque<std::shared_ptr<Log>> get_logs();
+	std::vector<SessionInfo> get_sessions();
+	std::deque<std::shared_ptr<Log>> get_logs(const std::string& session_id);
+	std::string get_current_session_id();
 	std::filesystem::path get_reports_directory(std::shared_ptr<Log> log);
 
 private:
 	std::filesystem::path sessions_directory;
 
 	std::mutex mutex;
-	std::condition_variable save_cv;
-	std::thread save_thread;
+	std::condition_variable session_cv;
+	std::thread session_thread;
 	bool running = false;
 
 	std::map<std::string, SessionInfo> sessions;
 	std::map<std::string, std::deque<std::shared_ptr<Log>>> session_logs; // loaded sessions, newest log first
 	std::set<std::string> changed_sessions;
+	std::set<std::string> load_requests;
 	std::string current_session_id;
 
 	void run();
 	void save();
+	void load_session(const std::string& id);
 
 	std::string create_session(std::chrono::system_clock::time_point time);
 };
