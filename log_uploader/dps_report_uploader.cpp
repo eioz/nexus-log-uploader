@@ -95,7 +95,7 @@ void DPSReportUploader::run()
 			if (addon::settings->get().dps_report.user_token.empty() && !upload.user_token.empty())
 			{
 				addon::settings->write([&](auto& s) { s.dps_report.user_token = upload.user_token; });
-				addon::log("dps.report user token acquired: " + upload.user_token, LOGLEVEL_INFO);
+				addon::log("dps.report user token acquired", LOGLEVEL_INFO);
 			}
 
 			if (addon::settings->get().dps_report.auto_upload_copy_url_to_clipboard)
