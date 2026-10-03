@@ -1,11 +1,13 @@
 #include "elite_insights.h"
 #include "addon.h"
+#include "boons.h"
 #include "settings.h"
 #include "wingman_uploader.h"
 
 #include <cpr/cpr.h>
 #include <miniz/miniz.h>
 
+#include <algorithm>
 #include <fstream>
 
 #define INSTALLATION_DIRECTORY "elite-insights"
@@ -35,6 +37,54 @@ struct HandleGuard
 		}
 	}
 };
+
+std::vector<PlayerSummary> get_players(const nlohmann::json& json)
+{
+	std::vector<PlayerSummary> players;
+
+	if (!json.contains("players") || !json.contains("phases") || json.at("phases").empty())
+		return players;
+
+	// boss dps is the dps against the main targets of the full fight phase
+	auto boss_targets = json.at("phases").at(0).value("targets", std::vector<size_t>());
+
+	for (const auto& player : json.at("players"))
+	{
+		if (player.value("notInSquad", false) || player.value("friendlyNPC", false))
+			continue;
+
+		PlayerSummary summary;
+		summary.name = player.value("name", std::string());
+		summary.account = player.value("account", std::string());
+		summary.profession = player.value("profession", std::string());
+		summary.group = player.value("group", 0);
+		summary.cleave_dps = player.at("dpsAll").at(0).value("dps", 0);
+		summary.downs = player.at("defenses").at(0).value("downCount", 0);
+		summary.deaths = player.at("defenses").at(0).value("deadCount", 0);
+
+		for (auto target : boss_targets)
+		{
+			const auto& target_dps = player.at("dpsTargets").at(target).at(0);
+			summary.boss_dps += target_dps.value("dps", 0);
+			summary.breakbar_damage += target_dps.value("breakbarDamage", 0.0);
+		}
+
+		if (player.contains("buffUptimes"))
+		{
+			for (const auto& buff : player.at("buffUptimes"))
+			{
+				auto id = buff.value("id", 0);
+
+				if (std::any_of(Boons.begin(), Boons.end(), [&](const auto& boon) { return boon.id == id; }))
+					summary.boon_uptimes[id] = buff.at("buffData").at(0).value("uptime", 0.f);
+			}
+		}
+
+		players.push_back(summary);
+	}
+
+	return players;
+}
 } // namespace
 
 ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
@@ -200,6 +250,8 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path)
 					}
 				}
 			}
+
+			data.players = get_players(json);
 
 			json_file.close();
 			data.status = ParseStatus::PARSED;

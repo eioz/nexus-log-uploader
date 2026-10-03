@@ -174,6 +174,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="addon.h" />
+    <ClInclude Include="boons.h" />
     <ClInclude Include="directory_monitor.h" />
     <ClInclude Include="dps_report_uploader.h" />
     <ClInclude Include="elite_insights.h" />

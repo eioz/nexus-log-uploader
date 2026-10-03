@@ -78,6 +78,21 @@ public:
 	std::chrono::system_clock::time_point end_time{};
 };
 
+class PlayerSummary
+{
+public:
+	std::string name;
+	std::string account;
+	std::string profession;
+	int group = 0;
+	int boss_dps = 0;
+	int cleave_dps = 0;
+	int downs = 0;
+	int deaths = 0;
+	double breakbar_damage = 0.0;
+	std::map<int, float> boon_uptimes; // average stacks for might and stability
+};
+
 class EVTCParserData
 {
 public:
@@ -97,6 +112,7 @@ public:
 	std::optional<std::string> error_message;
 
 	Encounter encounter = Encounter();
+	std::vector<PlayerSummary> players;
 
 	bool is_success() const { return status == ParseStatus::PARSED && encounter.success; }
 
