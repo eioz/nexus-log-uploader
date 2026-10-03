@@ -89,6 +89,18 @@ void text_right(const std::string& text)
 	ImGui::TextUnformatted(text.c_str());
 }
 
+void percentile_right(const std::map<std::string, int>& percentiles, const std::string& account)
+{
+	auto percentile = percentiles.find(account);
+
+	if (percentile == percentiles.end())
+		return;
+
+	ImGui::PushStyleColor(ImGuiCol_Text, get_percentile_color(percentile->second));
+	text_right(std::format("{}%", percentile->second));
+	ImGui::PopStyleColor();
+}
+
 void icon_centered(unsigned resource_id, float height, const char* fallback)
 {
 	auto* texture = addon::get_icon(resource_id);
@@ -839,7 +851,8 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 		auto show_breakbar = std::any_of(players.begin(), players.end(), [](const auto* player) { return player->breakbar_damage > 0; });
 		auto show_ranks = std::any_of(statistics.ranks.begin(), statistics.ranks.end(), [](const auto& rank) { return !rank.second.empty(); });
 		auto show_percentiles = !statistics.dps_percentiles.empty();
-		auto column_count = 3 + (show_ranks ? 1 : 0) + (show_percentiles ? 1 : 0) + (display_settings.tooltip_downs_deaths ? 2 : 0) + (show_breakbar ? 1 : 0) + static_cast<int>(boons.size());
+		auto show_support_percentiles = !statistics.support_percentiles.empty();
+		auto column_count = 3 + (show_ranks ? 1 : 0) + (show_percentiles ? 1 : 0) + (show_support_percentiles ? 1 : 0) + (display_settings.tooltip_downs_deaths ? 2 : 0) + (show_breakbar ? 1 : 0) + static_cast<int>(boons.size());
 		auto table_left = ImGui::GetCursorScreenPos().x;
 
 		if (ImGui::BeginTable("Squad", column_count, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_RowBg))
@@ -865,6 +878,12 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 
 			ImGui::TableNextColumn();
 			text_right("Cleave DPS");
+
+			if (show_support_percentiles)
+			{
+				ImGui::TableNextColumn();
+				text_right("Support");
+			}
 
 			if (display_settings.tooltip_downs_deaths)
 			{
@@ -932,19 +951,17 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 				if (show_percentiles)
 				{
 					ImGui::TableNextColumn();
-
-					auto percentile = statistics.dps_percentiles.find(player->account);
-
-					if (percentile != statistics.dps_percentiles.end())
-					{
-						ImGui::PushStyleColor(ImGuiCol_Text, get_percentile_color(percentile->second));
-						text_right(std::format("{}%", percentile->second));
-						ImGui::PopStyleColor();
-					}
+					percentile_right(statistics.dps_percentiles, player->account);
 				}
 
 				ImGui::TableNextColumn();
 				text_right(format_dps(player->cleave_dps));
+
+				if (show_support_percentiles)
+				{
+					ImGui::TableNextColumn();
+					percentile_right(statistics.support_percentiles, player->account);
+				}
 
 				if (display_settings.tooltip_downs_deaths)
 				{

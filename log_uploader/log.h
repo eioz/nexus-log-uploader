@@ -89,10 +89,11 @@ public:
 	std::optional<int> median_duration_ms;
 	std::optional<int> best_duration_ms;
 
-	std::map<std::string, std::string> ranks;   // by account, empty for players without a rank
-	std::map<std::string, int> dps_percentiles; // by account, compared with the same profession
+	std::map<std::string, std::string> ranks;       // by account, empty for players without a rank
+	std::map<std::string, int> dps_percentiles;     // by account, compared with the same profession
+	std::map<std::string, int> support_percentiles; // by account, only for players wingman counts as support
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, era, kill_percentile, median_duration_ms, best_duration_ms, ranks, dps_percentiles)
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, era, kill_percentile, median_duration_ms, best_duration_ms, ranks, dps_percentiles, support_percentiles)
 };
 
 class Encounter

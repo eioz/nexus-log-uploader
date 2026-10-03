@@ -4,6 +4,8 @@
 
 #include <cpr/cpr.h>
 
+#include <set>
+
 IMPLEMENT_MODULE(WingmanUploader, wingman_uploader)
 
 #define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(180)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
@@ -248,9 +250,20 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				url = WINGMAN_URL "/log/" + json.at("log").at("html").get<std::string>();
 		}
 
-		if (!url.empty() && encounter.success)
+		auto unrated = std::any_of(data.parser_data.players.begin(), data.parser_data.players.end(), [&](const auto& player) { return !statistics.dps_percentiles.contains(player.account); });
+
+		if (!url.empty() && encounter.success && unrated)
 		{
 			auto log_id = url.substr(url.rfind('/') + 1);
+
+			// wingman decides who played support, private logs have no metadata
+			std::set<std::string> supports;
+			auto metadata = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/getMetadata/" + log_id), CPR_API_PARAMETERS));
+
+			if (metadata.contains("players"))
+				for (const auto& player : metadata.at("players"))
+					if (player.value("isSupport", 0) == 1)
+						supports.insert(player.value("account", ""));
 
 			for (const auto& player : data.parser_data.players)
 			{
@@ -262,10 +275,15 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/api/ratePerformanceOfPlayerInLogs"), cpr::Header{ { "Content-Type", "application/json" } }, cpr::Body(body.dump()), CPR_API_PARAMETERS));
 
 				// patches before 26-01 are not rated
-				auto percentile = get_number(json.at(0).value("percentiles", nlohmann::json()), "DamageProfession");
+				auto percentiles = json.at(0).value("percentiles", nlohmann::json());
+				auto dps_percentile = get_number(percentiles, "DamageProfession");
+				auto support_percentile = get_number(percentiles, "SupportProfession");
 
-				if (percentile && *percentile >= 0)
-					statistics.dps_percentiles[player.account] = *percentile;
+				if (dps_percentile && *dps_percentile >= 0)
+					statistics.dps_percentiles[player.account] = *dps_percentile;
+
+				if (supports.contains(player.account) && support_percentile && *support_percentile >= 0)
+					statistics.support_percentiles[player.account] = *support_percentile;
 			}
 		}
 	}
