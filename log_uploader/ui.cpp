@@ -175,6 +175,11 @@ void UI::draw_dps_report_options(SettingsData& settings)
 {
 	ImGui::ID id("DPS Report Settings");
 
+	UI_CHECKBOX_T("Enabled", dps_report.enabled, "Upload logs to dps.report");
+
+	if (!settings.dps_report.enabled)
+		return;
+
 	UI_CHECKBOX_T("Auto upload", dps_report.auto_upload, "Automatically upload new logs based on selected encounters and filter options");
 
 	UI_COMBO("Auto upload result filter", dps_report.auto_upload_filter, "None\0Successful only\0");
@@ -215,6 +220,11 @@ void UI::draw_dps_report_options(SettingsData& settings)
 void UI::draw_wingman_options(SettingsData& settings)
 {
 	ImGui::ID id("Wingman Settings");
+
+	UI_CHECKBOX_T("Enabled", wingman.enabled, "Upload logs to Wingman and show its statistics");
+
+	if (!settings.wingman.enabled)
+		return;
 
 	UI_CHECKBOX_T("Auto upload", wingman.auto_upload, "Automatically upload new logs based on selected encounters and filter options");
 	UI_COMBO("Auto upload result filter", wingman.auto_upload_filter, "None\0Successful only\0");

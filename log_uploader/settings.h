@@ -42,6 +42,7 @@ struct SettingsData
 {
 	struct DPSReport
 	{
+		bool enabled = true;
 		bool auto_upload = false;
 		bool auto_upload_copy_url_to_clipboard = false;
 
@@ -54,19 +55,20 @@ struct SettingsData
 
 		EncounterSelection auto_upload_encounters;
 
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(DPSReport, auto_upload, auto_upload_copy_url_to_clipboard, user_token, anonymize, detailed_wvw, auto_upload_filter, auto_upload_encounters)
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(DPSReport, enabled, auto_upload, auto_upload_copy_url_to_clipboard, user_token, anonymize, detailed_wvw, auto_upload_filter, auto_upload_encounters)
 
 	} dps_report;
 
 	struct Wingman
 	{
+		bool enabled = true;
 		bool auto_upload = false;
 
 		AutoUploadFilter auto_upload_filter = AutoUploadFilter::NONE;
 
 		EncounterSelection auto_upload_encounters;
 
-		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Wingman, auto_upload, auto_upload_filter, auto_upload_encounters)
+		NLOHMANN_DEFINE_TYPE_INTRUSIVE(Wingman, enabled, auto_upload, auto_upload_filter, auto_upload_encounters)
 
 	} wingman;
 

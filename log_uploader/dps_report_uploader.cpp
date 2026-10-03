@@ -11,7 +11,7 @@ IMPLEMENT_MODULE(DPSReportUploader, dps_report_uploader)
 
 void DPSReportUploader::add_log(std::shared_ptr<Log> log)
 {
-	if (!initialized.load())
+	if (!initialized.load() || !addon::settings->get().dps_report.enabled)
 		return;
 
 	std::unique_lock lock(log->mutex);

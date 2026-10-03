@@ -32,7 +32,7 @@ std::optional<int> get_number(const nlohmann::json& json, const char* key)
 
 void WingmanUploader::add_log(std::shared_ptr<Log> log)
 {
-	if (!initialized.load())
+	if (!initialized.load() || !addon::settings->get().wingman.enabled)
 		return;
 
 	std::unique_lock lock(log->mutex);
@@ -79,7 +79,7 @@ void WingmanUploader::process_auto_upload(std::shared_ptr<Log> log)
 
 void WingmanUploader::request_statistics(std::shared_ptr<Log> log)
 {
-	if (!initialized.load())
+	if (!initialized.load() || !addon::settings->get().wingman.enabled)
 		return;
 
 	std::unique_lock upload_queue_lock(upload_queue_mutex);

@@ -115,7 +115,8 @@ void LogsTable::render()
 
 	update_entries();
 
-	auto display_settings = addon::settings->get().display.log_table;
+	auto settings = addon::settings->get();
+	auto& display_settings = settings.display.log_table;
 
 	auto open = this->open;
 
@@ -235,10 +236,10 @@ void LogsTable::render()
 		if (display_settings.parser_column)
 			columns.push_back(Columns::PARSER);
 
-		if (display_settings.dps_report_column)
+		if (display_settings.dps_report_column && settings.dps_report.enabled)
 			columns.push_back(Columns::DPS_REPORT);
 
-		if (display_settings.wingman_column)
+		if (display_settings.wingman_column && settings.wingman.enabled)
 			columns.push_back(Columns::WINGMAN);
 
 		if (ImGui::BeginTable("Logs Table", static_cast<int>(columns.size()), table_flags))
@@ -370,8 +371,8 @@ void LogsTable::render()
 		}
 	}
 
-	draw_tooltip(display_settings);
-	draw_context_menu();
+	draw_tooltip(settings);
+	draw_context_menu(settings);
 
 	if (!display_settings.background)
 		ImGui::PopStyleColor(2);
@@ -403,7 +404,7 @@ void LogsTable::update_entries()
 		entry.update();
 }
 
-void LogsTable::draw_context_menu()
+void LogsTable::draw_context_menu(const SettingsData& settings)
 {
 	if (!ImGui::BeginPopupContextWindow("Context Menu"))
 		return;
@@ -482,7 +483,7 @@ void LogsTable::draw_context_menu()
 					{
 						action_logs[static_cast<size_t>(LogAction::OPEN_REPORTS)].push_back(e);
 
-						if (e.data.wingman_upload.status == UploadStatus::AVAILABLE || e.data.wingman_upload.status == UploadStatus::FAILED)
+						if (settings.wingman.enabled && (e.data.wingman_upload.status == UploadStatus::AVAILABLE || e.data.wingman_upload.status == UploadStatus::FAILED))
 						{
 							action_logs[static_cast<size_t>(LogAction::UPLOAD_TO_WINGMAN)].push_back(e);
 						}
@@ -491,6 +492,9 @@ void LogsTable::draw_context_menu()
 					{
 						action_logs[static_cast<size_t>(LogAction::PARSE)].push_back(e);
 					}
+
+					if (!settings.dps_report.enabled)
+						return;
 
 					if (e.data.dps_report_upload.status == UploadStatus::AVAILABLE || e.data.dps_report_upload.status == UploadStatus::FAILED)
 					{
@@ -716,8 +720,10 @@ void LogsTable::draw_session_menu()
 	ImGui::EndMenu();
 }
 
-void LogsTable::draw_tooltip(const SettingsData::Display::LogTable& display_settings)
+void LogsTable::draw_tooltip(const SettingsData& settings)
 {
+	auto& display_settings = settings.display.log_table;
+
 	// stays open while its log or the tooltip itself is hovered, so it can be scrolled
 	if (!tooltip_log || ImGui::GetTime() - tooltip_time > 0.3 || ImGui::IsPopupOpen("Context Menu"))
 	{
@@ -789,7 +795,9 @@ void LogsTable::draw_tooltip(const SettingsData::Display::LogTable& display_sett
 		ImGui::SameLine();
 		ImGui::TextDisabled("| %s | %s", entry->view.duration.c_str(), std::format("{:%d %b %Y, %H:%M}", end_time).c_str());
 
-		auto& statistics = entry->data.wingman_statistics;
+		// saved statistics stay hidden while wingman is turned off
+		static const WingmanStatistics no_statistics;
+		auto& statistics = settings.wingman.enabled ? entry->data.wingman_statistics : no_statistics;
 		std::string details;
 
 		if (statistics.median_duration_ms && statistics.best_duration_ms)
