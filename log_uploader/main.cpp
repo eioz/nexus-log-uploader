@@ -68,7 +68,7 @@ void load(AddonAPI_t* addon_api)
 	for (const auto& [profession, icon] : ProfessionIcons)
 		load_icon(icon);
 
-	for (auto icon : { IDR_COMBAT_DOWNED, IDR_COMBAT_DEAD, IDR_COMBAT_CC })
+	for (auto icon : { IDR_COMBAT_DOWNED, IDR_COMBAT_DEAD, IDR_COMBAT_CC, IDR_COMBAT_SUPPORT, IDR_COMBAT_DAMAGE })
 		load_icon(icon);
 
 	// encounters can share an icon

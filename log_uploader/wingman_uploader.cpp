@@ -30,6 +30,15 @@ std::optional<int> get_number(const nlohmann::json& json, const char* key)
 
 	return std::nullopt;
 }
+
+// ranks from F to SSS, - without a rank
+std::string get_rank(const nlohmann::json& json, const char* key)
+{
+	if (json.contains(key) && json.at(key).is_string() && json.at(key) != "-")
+		return json.at(key).get<std::string>();
+
+	return "";
+}
 } // namespace
 
 void WingmanUploader::add_log(std::shared_ptr<Log> log)
@@ -250,9 +259,7 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				auto response = cpr::Get(cpr::Url(WINGMAN_URL "/api/playerRanks/current/" + std::string(account.begin(), account.end())), CPR_API_PARAMETERS);
 
 				// players have no rank until someone presses rerank on their wingman profile
-				auto rank = response.status_code == 404 ? nlohmann::json() : get_json(response).value("globalRank", nlohmann::json());
-
-				ranks[player.account] = rank.is_string() && rank != "-" ? rank.get<std::string>() : "";
+				ranks[player.account] = response.status_code == 404 ? "" : get_rank(get_json(response), "globalRank");
 			}
 
 			statistics.ranks[player.account] = ranks[player.account];

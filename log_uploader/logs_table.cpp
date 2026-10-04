@@ -54,6 +54,29 @@ std::string format_duration(int duration_ms)
 	return std::format("{}m {}s", duration_ms / 60000, duration_ms / 1000 % 60);
 }
 
+// parts without a color are disabled
+using TextPart = std::pair<std::string, std::optional<ImVec4>>;
+
+void text_parts(const std::vector<TextPart>& parts)
+{
+	auto space = ImGui::CalcTextSize(" ").x;
+
+	for (size_t i = 0; i < parts.size(); ++i)
+	{
+		if (i > 0)
+		{
+			ImGui::SameLine(0.f, space);
+			ImGui::TextDisabled("|");
+			ImGui::SameLine(0.f, space);
+		}
+
+		if (parts[i].second)
+			ImGui::TextColored(*parts[i].second, "%s", parts[i].first.c_str());
+		else
+			ImGui::TextDisabled("%s", parts[i].first.c_str());
+	}
+}
+
 std::string get_session_name(const SessionInfo& session)
 {
 	std::chrono::zoned_time local_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::minutes>(session.start_time) };
@@ -89,6 +112,16 @@ void text_right(const std::string& text)
 	ImGui::TextUnformatted(text.c_str());
 }
 
+void text_centered(const std::string& text)
+{
+	auto offset = (ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(text.c_str()).x) * 0.5f;
+
+	if (offset > 0)
+		ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+
+	ImGui::TextUnformatted(text.c_str());
+}
+
 void percentile_right(const std::map<std::string, int>& percentiles, const std::string& account)
 {
 	auto percentile = percentiles.find(account);
@@ -98,6 +131,18 @@ void percentile_right(const std::map<std::string, int>& percentiles, const std::
 
 	ImGui::PushStyleColor(ImGuiCol_Text, get_percentile_color(percentile->second));
 	text_right(std::format("{}%", percentile->second));
+	ImGui::PopStyleColor();
+}
+
+void rank_centered(const std::map<std::string, std::string>& ranks, const std::string& account)
+{
+	auto rank = ranks.find(account);
+
+	if (rank == ranks.end() || rank->second.empty())
+		return;
+
+	ImGui::PushStyleColor(ImGuiCol_Text, get_rank_color(rank->second));
+	text_centered(rank->second);
 	ImGui::PopStyleColor();
 }
 
@@ -803,55 +848,39 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 
 		std::chrono::zoned_time end_time = { std::chrono::current_zone(), std::chrono::floor<std::chrono::seconds>(encounter.end_time) };
 
-		ImGui::TextColored(encounter.success ? SUCCESS_COLOR : FAILURE_COLOR, "%s", entry->view.result.c_str());
-		ImGui::SameLine();
-		ImGui::TextDisabled("| %s | %s", entry->view.duration.c_str(), std::format("{:%d %b %Y, %H:%M}", end_time).c_str());
-
 		// saved statistics stay hidden while wingman is turned off
 		static const WingmanStatistics no_statistics;
 		auto& statistics = settings.wingman.enabled ? entry->data.wingman_statistics : no_statistics;
 
-		// parts without a color are shown disabled
-		std::vector<std::pair<std::string, std::optional<ImVec4>>> parts;
-
-		if (statistics.kill_percentile)
-			parts.emplace_back(std::format("Faster than {}% of kills", *statistics.kill_percentile), get_percentile_color(*statistics.kill_percentile));
-
-		if (statistics.median_duration_ms && statistics.best_duration_ms)
-		{
-			parts.emplace_back("Median " + format_duration(*statistics.median_duration_ms), std::nullopt);
-			parts.emplace_back("Best " + format_duration(*statistics.best_duration_ms) + (statistics.best_group.empty() ? "" : " (" + statistics.best_group + ")"), std::nullopt);
-		}
+		std::vector<TextPart> result = { { entry->view.result, encounter.success ? SUCCESS_COLOR : FAILURE_COLOR }, { entry->view.duration, std::nullopt } };
 
 		// another upload of this fight can be slightly shorter
 		if (statistics.personal_best_ms)
 		{
 			if (encounter.duration_ms <= *statistics.personal_best_ms + 1000)
-				parts.emplace_back("Personal best", get_percentile_color(100));
+				result.emplace_back("Personal best", get_percentile_color(100));
 			else
-				parts.emplace_back("PB " + format_duration(*statistics.personal_best_ms), std::nullopt);
+				result.emplace_back("PB " + format_duration(*statistics.personal_best_ms), std::nullopt);
+		}
+
+		result.emplace_back(std::format("{:%d %b %Y, %H:%M}", end_time), std::nullopt);
+		text_parts(result);
+
+		std::vector<TextPart> comparison;
+
+		if (statistics.kill_percentile)
+			comparison.emplace_back(std::format("Faster than {}% of kills", *statistics.kill_percentile), get_percentile_color(*statistics.kill_percentile));
+
+		if (statistics.median_duration_ms && statistics.best_duration_ms)
+		{
+			comparison.emplace_back("Median " + format_duration(*statistics.median_duration_ms), std::nullopt);
+			comparison.emplace_back("Best " + format_duration(*statistics.best_duration_ms) + (statistics.best_group.empty() ? "" : " (" + statistics.best_group + ")"), std::nullopt);
 		}
 
 		if (!statistics.era.empty())
-			parts.emplace_back("Era " + statistics.era, std::nullopt);
+			comparison.emplace_back("Era " + statistics.era, std::nullopt);
 
-		// separated like the text in the line above
-		auto space = ImGui::CalcTextSize(" ").x;
-
-		for (size_t i = 0; i < parts.size(); ++i)
-		{
-			if (i > 0)
-			{
-				ImGui::SameLine(0.f, space);
-				ImGui::TextDisabled("|");
-				ImGui::SameLine(0.f, space);
-			}
-
-			if (parts[i].second)
-				ImGui::TextColored(*parts[i].second, "%s", parts[i].first.c_str());
-			else
-				ImGui::TextDisabled("%s", parts[i].first.c_str());
-		}
+		text_parts(comparison);
 
 		ImGui::EndGroup();
 		ImGui::Spacing();
@@ -872,9 +901,9 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 
 		auto show_breakbar = std::any_of(players.begin(), players.end(), [](const auto* player) { return player->breakbar_damage > 0; });
 		auto show_ranks = std::any_of(statistics.ranks.begin(), statistics.ranks.end(), [](const auto& rank) { return !rank.second.empty(); });
-		auto show_percentiles = !statistics.dps_percentiles.empty();
+		auto show_dps_percentiles = !statistics.dps_percentiles.empty();
 		auto show_support_percentiles = !statistics.support_percentiles.empty();
-		auto column_count = 3 + (show_ranks ? 1 : 0) + (show_percentiles ? 1 : 0) + (show_support_percentiles ? 1 : 0) + (display_settings.tooltip_downs_deaths ? 2 : 0) + (show_breakbar ? 1 : 0) + static_cast<int>(boons.size());
+		auto column_count = 3 + (show_ranks ? 1 : 0) + (show_dps_percentiles ? 1 : 0) + (show_support_percentiles ? 1 : 0) + (show_breakbar ? 1 : 0) + (display_settings.tooltip_downs_deaths ? 2 : 0) + static_cast<int>(boons.size());
 		auto table_left = ImGui::GetCursorScreenPos().x;
 
 		if (ImGui::BeginTable("Squad", column_count, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoHostExtendX | ImGuiTableFlags_RowBg))
@@ -888,23 +917,30 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 			if (show_ranks)
 			{
 				ImGui::TableNextColumn();
-				ImGui::TextUnformatted("Rank");
+				text_centered("Rank");
 			}
 
-			ImGui::TableNextColumn();
-			text_right("Boss DPS");
-
-			// the dps percentile has no label of its own
-			if (show_percentiles)
+			if (show_dps_percentiles)
+			{
 				ImGui::TableNextColumn();
-
-			ImGui::TableNextColumn();
-			text_right("Cleave DPS");
+				icon_centered(IDR_COMBAT_DAMAGE, font_size, "Damage");
+			}
 
 			if (show_support_percentiles)
 			{
 				ImGui::TableNextColumn();
-				text_right("Support");
+				icon_centered(IDR_COMBAT_SUPPORT, font_size, "Support");
+			}
+
+			ImGui::TableNextColumn();
+			text_right("Boss DPS");
+			ImGui::TableNextColumn();
+			text_right("Cleave");
+
+			if (show_breakbar)
+			{
+				ImGui::TableNextColumn();
+				icon_centered(IDR_COMBAT_CC, font_size, "CC");
 			}
 
 			if (display_settings.tooltip_downs_deaths)
@@ -913,12 +949,6 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 				icon_centered(IDR_COMBAT_DOWNED, font_size, "Downs");
 				ImGui::TableNextColumn();
 				icon_centered(IDR_COMBAT_DEAD, font_size, "Deaths");
-			}
-
-			if (show_breakbar)
-			{
-				ImGui::TableNextColumn();
-				icon_centered(IDR_COMBAT_CC, font_size, "CC");
 			}
 
 			for (const auto* boon : boons)
@@ -960,29 +990,30 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 				if (show_ranks)
 				{
 					ImGui::TableNextColumn();
-
-					auto rank = statistics.ranks.find(player->account);
-
-					if (rank != statistics.ranks.end() && !rank->second.empty())
-						ImGui::TextColored(get_rank_color(rank->second), "%s", rank->second.c_str());
+					rank_centered(statistics.ranks, player->account);
 				}
 
-				ImGui::TableNextColumn();
-				text_right(format_dps(player->boss_dps));
-
-				if (show_percentiles)
+				if (show_dps_percentiles)
 				{
 					ImGui::TableNextColumn();
 					percentile_right(statistics.dps_percentiles, player->account);
 				}
 
-				ImGui::TableNextColumn();
-				text_right(format_dps(player->cleave_dps));
-
 				if (show_support_percentiles)
 				{
 					ImGui::TableNextColumn();
 					percentile_right(statistics.support_percentiles, player->account);
+				}
+
+				ImGui::TableNextColumn();
+				text_right(format_dps(player->boss_dps));
+				ImGui::TableNextColumn();
+				text_right(format_dps(player->cleave_dps));
+
+				if (show_breakbar)
+				{
+					ImGui::TableNextColumn();
+					text_right(std::format("{:.0f}", player->breakbar_damage));
 				}
 
 				if (display_settings.tooltip_downs_deaths)
@@ -991,12 +1022,6 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 					text_right(std::to_string(player->downs));
 					ImGui::TableNextColumn();
 					text_right(std::to_string(player->deaths));
-				}
-
-				if (show_breakbar)
-				{
-					ImGui::TableNextColumn();
-					text_right(std::format("{:.0f}", player->breakbar_damage));
 				}
 
 				for (const auto* boon : boons)

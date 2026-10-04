@@ -65,6 +65,8 @@ IDR_PROFESSION_RITUALIST PNG "resources/professions/ritualist.png"
 IDR_COMBAT_DOWNED PNG "resources/combat_downed.png"
 IDR_COMBAT_DEAD PNG "resources/combat_dead.png"
 IDR_COMBAT_CC PNG "resources/combat_cc.png"
+IDR_COMBAT_SUPPORT PNG "resources/combat_support.png"
+IDR_COMBAT_DAMAGE PNG "resources/combat_damage.png"
 
 IDR_ENCOUNTER_VALE_GUARDIAN PNG "resources/encounters/vale_guardian.png"
 IDR_ENCOUNTER_SPIRIT_WOODS PNG "resources/encounters/spirit_woods.png"
