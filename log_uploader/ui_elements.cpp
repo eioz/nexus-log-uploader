@@ -18,8 +18,11 @@ bool ImGui::ButtonDisabled(const char* label, bool disabled)
 		PushItemFlag(ImGuiItemFlags_Disabled, true);
 	}
 
+	// only hovered buttons get a background, so the table stays calm
+	PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 	SetNextItemWidth(GetColumnWidth());
 	auto result = Button(label, ImVec2(GetColumnWidth(), 0.f));
+	PopStyleColor();
 
 	if (disabled)
 	{
