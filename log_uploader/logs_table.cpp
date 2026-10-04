@@ -378,6 +378,10 @@ void LogsTable::render()
 				for (auto column : columns)
 				{
 					ImGui::TableSetColumnIndex(index++);
+
+					// text lines up with the buttons, also without the selection column
+					ImGui::AlignTextToFramePadding();
+
 					switch (column)
 					{
 					case Columns::SELECT:
@@ -395,14 +399,15 @@ void LogsTable::render()
 					{
 						auto* portrait = entry.data.parser_data.status == ParseStatus::PARSED ? get_portrait(entry.data) : nullptr;
 						auto font_size = ImGui::GetFontSize();
+						auto position = ImGui::GetCursorScreenPos() + ImVec2(0.f, ImGui::GetStyle().FramePadding.y);
 
 						// hovering the portrait also opens the tooltip
 						ImGui::BeginGroup();
+						ImGui::Dummy(ImVec2(font_size, font_size));
 
+						// at the height of the aligned text
 						if (portrait && portrait->Resource)
-							ImGui::Image(portrait->Resource, ImVec2(font_size, font_size));
-						else
-							ImGui::Dummy(ImVec2(font_size, font_size));
+							ImGui::GetWindowDrawList()->AddImage(portrait->Resource, position, position + ImVec2(font_size, font_size));
 
 						ImGui::SameLine();
 						ImGui::TextUnformatted(view.name.c_str());
