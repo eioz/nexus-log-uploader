@@ -90,6 +90,7 @@ enum class TriggerID : uint16_t
 	Cerus = 25989,
 	// Visions of Eternity
 	KelaSeneschalOfWaves = 27124,
+	Vloxx = 28106,
 
 	// Fractals
 	// Nightmare
@@ -107,6 +108,10 @@ enum class TriggerID : uint16_t
 	KanaxaiChallengeMode = 25577,
 	// Lonely Tower
 	Eparch = 26231,
+	// Kinfall
+	WhisperingShadow = 27010,
+	// Solitary Throne
+	EternalTyrant = 28051,
 
 	// Other
 	// Convergences
@@ -222,6 +227,7 @@ inline const std::vector<EncounterCategory> EncounterCategories = {
     } },
     { "Visions of Eternity", {
       { "Guardian's Glade", { TriggerID::KelaSeneschalOfWaves }, IDR_ENCOUNTER_GUARDIANS_GLADE },
+      { "Nexus of Eternity", { TriggerID::Vloxx }, IDR_ENCOUNTER_NEXUS_OF_ETERNITY },
     } },
   } },
   { "Fractals", {
@@ -243,6 +249,12 @@ inline const std::vector<EncounterCategory> EncounterCategories = {
     } },
     { "Lonely Tower", {
       { "Eparch", { TriggerID::Eparch }, IDR_ENCOUNTER_EPARCH },
+    } },
+    { "Kinfall", {
+      { "Whispering Shadow", { TriggerID::WhisperingShadow }, IDR_ENCOUNTER_WHISPERING_SHADOW },
+    } },
+    { "Solitary Throne", {
+      { "Eternal Tyrant", { TriggerID::EternalTyrant }, IDR_ENCOUNTER_ETERNAL_TYRANT },
     } },
   } },
   { "Other", {
