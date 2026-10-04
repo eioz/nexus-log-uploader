@@ -13,9 +13,6 @@
 #undef min
 #undef max
 
-#define SUCCESS_COLOR ImVec4(0.45f, 0.8f, 0.45f, 1.f)
-#define FAILURE_COLOR ImVec4(0.9f, 0.45f, 0.4f, 1.f)
-
 namespace
 {
 // gray up to 30, then blue at 60 and purple at 100 like gw2 raidar

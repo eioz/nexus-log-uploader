@@ -35,6 +35,23 @@ bool ImGui::ButtonDisabled(const char* label, bool disabled)
 	return result;
 }
 
+namespace
+{
+// failed parses and uploads stand out and are retried on click
+bool button_with_failure(const char* label, bool available, bool failed)
+{
+	if (failed)
+		ImGui::PushStyleColor(ImGuiCol_Text, FAILURE_COLOR);
+
+	auto clicked = ImGui::ButtonDisabled(label, !available);
+
+	if (failed)
+		ImGui::PopStyleColor();
+
+	return clicked;
+}
+} // namespace
+
 void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 {
 	ID id("Parser Button");
@@ -57,12 +74,13 @@ void ImGui::ButtonParser(std::shared_ptr<Log> log, LogData& log_data)
 		}
 	};
 
-	auto available = log_data.parser_data.status == ParseStatus::PARSED || log_data.parser_data.status == ParseStatus::UNPARSED;
+	auto failed = log_data.parser_data.status == ParseStatus::FAILED;
+	auto available = log_data.parser_data.status == ParseStatus::PARSED || log_data.parser_data.status == ParseStatus::UNPARSED || failed;
 
 	// logs of archived sessions can be parsed again
 	auto text = log_data.parser_data.status == ParseStatus::PARSED && !log_data.parser_data.has_report() ? "Parse" : get_text(log_data.parser_data.status);
 
-	if (ButtonDisabled(text, !available))
+	if (button_with_failure(text, available, failed))
 	{
 		if (log_data.parser_data.has_report())
 			ShellExecute(nullptr, L"open", log_data.parser_data.html_file_path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
@@ -98,14 +116,15 @@ bool ImGui::ButtonUpload(UploadStatus upload_status, bool available)
 		}
 	};
 
-	return ButtonDisabled(get_text(upload_status), !available);
+	return button_with_failure(get_text(upload_status), available, upload_status == UploadStatus::FAILED);
 }
 
 void ImGui::ButtonDPSReportUpload(std::shared_ptr<Log> log, DpsReportUpload& upload_data)
 {
 	ID id("DPS Report Button");
 
-	auto available = upload_data.status == UploadStatus::AVAILABLE || upload_data.status == UploadStatus::UPLOADED;
+	auto failed = upload_data.status == UploadStatus::FAILED;
+	auto available = upload_data.status == UploadStatus::AVAILABLE || upload_data.status == UploadStatus::UPLOADED || failed;
 
 	static const auto get_text = [](UploadStatus status) -> const char* {
 		switch (status)
@@ -129,9 +148,9 @@ void ImGui::ButtonDPSReportUpload(std::shared_ptr<Log> log, DpsReportUpload& upl
 		}
 	};
 
-	if (ButtonDisabled(get_text(upload_data.status), !available))
+	if (button_with_failure(get_text(upload_data.status), available, failed))
 	{
-		if (upload_data.status == UploadStatus::AVAILABLE)
+		if (upload_data.status == UploadStatus::AVAILABLE || failed)
 			addon::dps_report_uploader->add_log(log);
 		else if (upload_data.status == UploadStatus::UPLOADED && !upload_data.url.empty())
 			upload_data.open();
@@ -147,7 +166,7 @@ void ImGui::ButtonWingmanUpload(std::shared_ptr<Log> log, WingmanUpload& upload_
 
 	// logs that were already on wingman can be opened too
 	auto uploaded = (upload_data.status == UploadStatus::UPLOADED || upload_data.status == UploadStatus::SKIPPED) && !upload_data.url.empty();
-	auto available = upload_data.status == UploadStatus::AVAILABLE && parser_data.has_report();
+	auto available = (upload_data.status == UploadStatus::AVAILABLE || upload_data.status == UploadStatus::FAILED) && parser_data.has_report();
 
 	if (uploaded ? ButtonDisabled("Open", false) : ButtonUpload(upload_data.status, available))
 	{

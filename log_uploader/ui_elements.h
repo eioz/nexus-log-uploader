@@ -7,6 +7,9 @@
 #include "log.h"
 #include "settings.h"
 
+#define SUCCESS_COLOR ImVec4(0.45f, 0.8f, 0.45f, 1.f)
+#define FAILURE_COLOR ImVec4(0.9f, 0.45f, 0.4f, 1.f)
+
 namespace ImGui
 {
 class ID
