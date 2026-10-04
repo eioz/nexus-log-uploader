@@ -397,7 +397,7 @@ void LogsTable::render()
 						break;
 					case Columns::NAME:
 					{
-						auto* portrait = entry.data.parser_data.status == ParseStatus::PARSED ? get_portrait(entry.data) : nullptr;
+						auto* portrait = get_portrait(entry.data);
 						auto font_size = ImGui::GetFontSize();
 						auto position = ImGui::GetCursorScreenPos() + ImVec2(0.f, ImGui::GetStyle().FramePadding.y);
 
