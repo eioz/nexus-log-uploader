@@ -402,7 +402,10 @@ void LogsTable::render()
 						}
 						break;
 					case Columns::RESULT:
-						ImGui::TextUnformatted(view.result.c_str());
+						if (entry.data.parser_data.status == ParseStatus::PARSED)
+							ImGui::TextColored(entry.data.parser_data.encounter.success ? SUCCESS_COLOR : FAILURE_COLOR, "%s", view.result.c_str());
+						else
+							ImGui::TextUnformatted(view.result.c_str());
 						break;
 					case Columns::DURATION:
 						ImGui::TextUnformatted(view.duration.c_str());
