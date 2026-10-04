@@ -105,6 +105,7 @@ private:
 	void update_entries();
 	void draw_context_menu(const SettingsData& settings);
 	void draw_session_menu();
+	void draw_empty_session();
 	void draw_tooltip(const SettingsData& settings);
 
 	enum Columns : uint8_t

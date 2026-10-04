@@ -299,7 +299,10 @@ void LogsTable::render()
 		if (display_settings.wingman_column && settings.wingman.enabled)
 			columns.push_back(Columns::WINGMAN);
 
-		if (ImGui::BeginTable("Logs Table", static_cast<int>(columns.size()), table_flags))
+		if (entries.empty())
+			draw_empty_session();
+
+		if (!entries.empty() && ImGui::BeginTable("Logs Table", static_cast<int>(columns.size()), table_flags))
 		{
 			for (auto column : columns)
 			{
@@ -778,6 +781,40 @@ void LogsTable::draw_session_menu()
 	}
 
 	ImGui::EndMenu();
+}
+
+void LogsTable::draw_empty_session()
+{
+	auto current_session_id = addon::session_manager->get_current_session_id();
+	auto sessions = addon::session_manager->get_sessions();
+	std::optional<SessionInfo> last_session;
+
+	for (const auto& session : sessions)
+		if (!session.archived && session.id != current_session_id && (!last_session || session.end_time > last_session->end_time))
+			last_session = session;
+
+	auto& style = ImGui::GetStyle();
+	auto available = ImGui::GetContentRegionAvail();
+	auto height = 2 * ImGui::GetTextLineHeightWithSpacing() + (last_session ? style.ItemSpacing.y + ImGui::GetFrameHeight() : 0.f);
+	auto left = ImGui::GetCursorPosX();
+
+	auto center = [&](float width) { ImGui::SetCursorPosX(left + std::max((available.x - width) * 0.5f, 0.f)); };
+
+	ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::max((available.y - height) * 0.5f, 0.f));
+
+	center(ImGui::CalcTextSize("No logs in this session yet").x);
+	ImGui::TextUnformatted("No logs in this session yet");
+	center(ImGui::CalcTextSize("Right-click for sessions and settings").x);
+	ImGui::TextDisabled("Right-click for sessions and settings");
+
+	if (!last_session)
+		return;
+
+	ImGui::Dummy(ImVec2(0.f, style.ItemSpacing.y));
+	center(ImGui::CalcTextSize("Show last session").x + 2 * style.FramePadding.x);
+
+	if (ImGui::Button("Show last session"))
+		viewed_session_id = last_session->id;
 }
 
 void LogsTable::draw_tooltip(const SettingsData& settings)
