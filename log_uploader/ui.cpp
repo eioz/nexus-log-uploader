@@ -141,6 +141,7 @@ void UI::draw_display_options(SettingsData& settings)
 	UI_CHECKBOX("Hide in combat", display.log_table.hide_in_combat);
 	ImGui::Spacing();
 	ImGui::Text("Columns");
+	UI_CHECKBOX("Selection", display.log_table.select_column);
 	UI_CHECKBOX("Parser", display.log_table.parser_column);
 	UI_CHECKBOX("DPS Report", display.log_table.dps_report_column);
 	UI_CHECKBOX("Wingman", display.log_table.wingman_column);

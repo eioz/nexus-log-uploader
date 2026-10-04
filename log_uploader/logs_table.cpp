@@ -281,7 +281,9 @@ void LogsTable::render()
 
 		std::vector<Columns> columns;
 
-		columns.push_back(Columns::SELECT);
+		if (display_settings.select_column)
+			columns.push_back(Columns::SELECT);
+
 		columns.push_back(Columns::TIME);
 		columns.push_back(Columns::NAME);
 		columns.push_back(Columns::RESULT);
@@ -498,6 +500,11 @@ void LogsTable::draw_context_menu(const SettingsData& settings)
 	for (auto i = 0; i < static_cast<int>(LogSelection::COUNT); ++i)
 	{
 		auto selection = static_cast<LogSelection>(i);
+
+		// logs can only be selected in the selection column
+		if (selection == LogSelection::SELECTED && !settings.display.log_table.select_column)
+			continue;
+
 		std::deque<std::reference_wrapper<LogTableEntry>>* current_logs = nullptr;
 		std::string menu_label;
 

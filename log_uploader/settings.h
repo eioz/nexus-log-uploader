@@ -100,6 +100,7 @@ struct SettingsData
 			bool title_bar = true;
 			bool background = true;
 
+			bool select_column = true;
 			bool parser_column = true;
 			bool dps_report_column = true;
 			bool wingman_column = true;
@@ -109,7 +110,7 @@ struct SettingsData
 			bool tooltip_downs_deaths = false;
 			std::vector<int> tooltip_boons = { 740, 725, 1187, 30328, 717, 718, 719 };
 
-			NLOHMANN_DEFINE_TYPE_INTRUSIVE(LogTable, fixed_size, fixed_position, clip_to_screen, alternate_row_backgrounds, alignment, position, size, title_bar, background, parser_column, dps_report_column, wingman_column, hide_in_combat, tooltip_downs_deaths, tooltip_boons)
+			NLOHMANN_DEFINE_TYPE_INTRUSIVE(LogTable, fixed_size, fixed_position, clip_to_screen, alternate_row_backgrounds, alignment, position, size, title_bar, background, select_column, parser_column, dps_report_column, wingman_column, hide_in_combat, tooltip_downs_deaths, tooltip_boons)
 
 		} log_table;
 
