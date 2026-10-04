@@ -390,7 +390,21 @@ void LogsTable::render()
 						}
 						break;
 					case Columns::NAME:
+					{
+						auto* portrait = entry.data.parser_data.status == ParseStatus::PARSED ? get_portrait(entry.data) : nullptr;
+						auto font_size = ImGui::GetFontSize();
+
+						// hovering the portrait also opens the tooltip
+						ImGui::BeginGroup();
+
+						if (portrait && portrait->Resource)
+							ImGui::Image(portrait->Resource, ImVec2(font_size, font_size));
+						else
+							ImGui::Dummy(ImVec2(font_size, font_size));
+
+						ImGui::SameLine();
 						ImGui::TextUnformatted(view.name.c_str());
+						ImGui::EndGroup();
 
 						if (ImGui::IsItemHovered() && entry.data.parser_data.status == ParseStatus::PARSED)
 						{
@@ -401,6 +415,7 @@ void LogsTable::render()
 							tooltip_time = ImGui::GetTime();
 						}
 						break;
+					}
 					case Columns::RESULT:
 						if (entry.data.parser_data.status == ParseStatus::PARSED)
 							ImGui::TextColored(entry.data.parser_data.encounter.success ? SUCCESS_COLOR : FAILURE_COLOR, "%s", view.result.c_str());
@@ -814,6 +829,13 @@ void LogsTable::draw_empty_session()
 		viewed_session_id = last_session->id;
 }
 
+Texture_t* LogsTable::get_portrait(const LogData& data)
+{
+	auto icon = EncounterIcons.find(data.trigger_id);
+
+	return icon != EncounterIcons.end() ? addon::get_icon(icon->second) : nullptr;
+}
+
 void LogsTable::draw_tooltip(const SettingsData& settings)
 {
 	auto& display_settings = settings.display.log_table;
@@ -854,8 +876,7 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem))
 			tooltip_time = ImGui::GetTime();
 
-		auto icon = EncounterIcons.find(entry->data.trigger_id);
-		auto* portrait = icon != EncounterIcons.end() ? addon::get_icon(icon->second) : nullptr;
+		auto* portrait = get_portrait(entry->data);
 
 		if (portrait && portrait->Resource)
 		{

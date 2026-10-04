@@ -12,6 +12,8 @@
 #include <string>
 #include <unordered_map>
 
+struct Texture_t;
+
 struct LogView
 {
 	bool selected = false;
@@ -108,6 +110,7 @@ private:
 	void draw_session_menu();
 	void draw_empty_session();
 	void draw_tooltip(const SettingsData& settings);
+	Texture_t* get_portrait(const LogData& data);
 
 	enum Columns : uint8_t
 	{
