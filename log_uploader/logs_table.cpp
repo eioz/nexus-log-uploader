@@ -321,7 +321,7 @@ void LogsTable::render()
 					ImGui::TableSetupColumn("Result", ImGuiTableColumnFlags_WidthFixed, 100.f);
 					break;
 				case Columns::DURATION:
-					ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, std::max(ImGui::CalcTextSize("Duration").x, ImGui::CalcTextSize("00m 00s 000ms").x));
+					ImGui::TableSetupColumn("Duration", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, std::max(ImGui::CalcTextSize("Duration").x, ImGui::CalcTextSize("00m 00s").x));
 					break;
 				case Columns::PARSER:
 					ImGui::TableSetupColumn("Report", ImGuiTableColumnFlags_WidthFixed | ImGuiTableColumnFlags_NoResize, std::max(ImGui::CalcTextSize("Unavailable").x, ImGui::CalcTextSize("dps.report").x));
@@ -411,7 +411,7 @@ void LogsTable::render()
 							ImGui::TextUnformatted(view.result.c_str());
 						break;
 					case Columns::DURATION:
-						ImGui::TextUnformatted(view.duration.c_str());
+						ImGui::TextUnformatted(view.short_duration.c_str());
 						break;
 					case Columns::PARSER:
 						ImGui::ButtonParser(entry.ptr, entry.data);
@@ -1115,6 +1115,9 @@ void LogTableEntry::update_view()
 		};
 
 		update_duration();
+
+		// the tooltip shows the milliseconds
+		view.short_duration = format_duration(encounter.duration_ms);
 	}
 	else
 	{

@@ -20,6 +20,7 @@ struct LogView
 	std::string time;
 	std::string result;
 	std::string duration;
+	std::string short_duration;
 	std::string time_ago;
 };
 
