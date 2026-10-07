@@ -358,7 +358,8 @@ void LogsTable::render()
 
 			for (auto& entry : entries)
 			{
-				ImGui::ID id(&entry.ptr);
+				// the log keeps its id when new logs move the rows
+				ImGui::ID id(entry.ptr.get());
 
 				auto& view = entry.view;
 
@@ -550,7 +551,8 @@ void LogsTable::draw_context_menu(const SettingsData& settings)
 			break;
 
 		case LogSelection::ALL:
-			menu_label = "All logs (" + std::to_string(entries.size()) + ")";
+			// the count is left out of the id, an open menu stays open when it changes
+			menu_label = "All logs (" + std::to_string(entries.size()) + ")###All logs";
 			break;
 
 		default:
@@ -674,7 +676,7 @@ void LogsTable::draw_context_menu(const SettingsData& settings)
 					{
 						any_option = true;
 
-						if (ImGui::BeginMenu(("Copy dps.report URLs (" + std::to_string(logs_for_copy.size()) + ")").c_str()))
+						if (ImGui::BeginMenu(("Copy dps.report URLs (" + std::to_string(logs_for_copy.size()) + ")###Copy dps.report URLs").c_str()))
 						{
 							if (ImGui::MenuItem("As raw list"))
 							{
