@@ -174,16 +174,13 @@ void LogsTable::render()
 
 	auto open = this->open;
 
-	if (display_settings.hide_in_combat)
-	{
-		if (addon::mumble != nullptr)
-			in_combat = addon::mumble->Context.IsInCombat;
+	// combat only counts while it hides the window
+	in_combat = display_settings.hide_in_combat && addon::mumble != nullptr && addon::mumble->Context.IsInCombat;
 
-		if (in_combat)
-			open = in_combat_override;
-		else
-			in_combat_override = false;
-	}
+	if (in_combat)
+		open = in_combat_override;
+	else
+		in_combat_override = false;
 
 	if (!open)
 		return;
@@ -460,6 +457,10 @@ void LogsTable::render()
 		ImGui::PopStyleColor(2);
 
 	ImGui::End();
+
+	// the close button also works while the window is shown in combat
+	if (in_combat)
+		in_combat_override = this->open;
 }
 
 void LogsTable::update_entries()

@@ -68,10 +68,11 @@ class LogsTable
 public:
 	void render();
 
+	// toggles what is shown, combat can hide an open window
 	void toggle_visibility()
 	{
 		std::lock_guard<std::mutex> lock(mutex);
-		open = !open;
+		open = !(in_combat ? in_combat_override : open);
 		if (in_combat)
 			in_combat_override = open;
 	}
