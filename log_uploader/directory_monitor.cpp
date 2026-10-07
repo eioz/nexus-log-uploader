@@ -5,8 +5,51 @@
 #include <ShlObj.h>
 #include <deque>
 #include <fstream>
+#include <set>
 
 IMPLEMENT_MODULE(DirectoryMonitor, directory_monitor)
+
+namespace
+{
+bool is_log_file(const std::filesystem::path& path)
+{
+	auto extension = path.extension();
+
+	return extension == ".evtc" || extension == ".zevtc";
+}
+
+void add_log_file(const std::filesystem::path& file_path)
+{
+	try
+	{
+		static const auto is_file_openable = [](const std::filesystem::path& log_path) -> bool {
+			std::ifstream file_stream(log_path);
+			return file_stream.is_open();
+		};
+
+		auto log_available = is_file_openable(file_path);
+
+		for (auto cooldown = 1; !log_available && cooldown < 150; ++cooldown)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(cooldown));
+			log_available = is_file_openable(file_path);
+		}
+
+		if (log_available)
+		{
+			addon::log("New evtc file detected: " + addon::to_utf8(file_path), LOGLEVEL_DEBUG);
+
+			addon::log_manager->add_log(file_path);
+		}
+		else
+			addon::log("Evtc file unavailable: " + addon::to_utf8(file_path), LOGLEVEL_WARNING);
+	}
+	catch (const std::exception& e)
+	{
+		addon::log("Failed to add new evtc file: " + std::string(e.what()), LOGLEVEL_WARNING);
+	}
+}
+} // namespace
 
 void DirectoryMonitor::initialize()
 {
@@ -70,7 +113,24 @@ void DirectoryMonitor::release()
 
 void DirectoryMonitor::run()
 {
-	if (monitor_directory.empty() || !std::filesystem::exists(monitor_directory))
+	// unreachable network paths throw without an error code
+	std::error_code ec;
+
+	// arcdps creates the log directory when it saves its first log
+	auto waited = false;
+
+	while (!monitor_directory.empty() && !std::filesystem::exists(monitor_directory, ec) && !ec)
+	{
+		if (!waited)
+			addon::log("Waiting for the log directory: " + addon::to_utf8(monitor_directory), LOGLEVEL_INFO);
+
+		waited = true;
+
+		if (WaitForSingleObject(stop_event, 1000) != WAIT_TIMEOUT)
+			return;
+	}
+
+	if (monitor_directory.empty() || !std::filesystem::exists(monitor_directory, ec))
 	{
 		addon::log("Directory monitor not started: path does not exist: " + addon::to_utf8(monitor_directory), LOGLEVEL_WARNING);
 		return;
@@ -98,6 +158,9 @@ void DirectoryMonitor::run()
 
 	addon::log("Started monitoring: " + addon::to_utf8(monitor_directory), LOGLEVEL_DEBUG);
 
+	auto read_pending = false;
+	std::set<std::filesystem::path> found_logs;
+
 	while (true)
 	{
 		auto result = ReadDirectoryChangesW(directory_handle, buffer.data(), static_cast<DWORD>(buffer.size()), TRUE, FILE_NOTIFY_CHANGE_FILE_NAME, &bytes_returned, &monitor_overlapped, nullptr);
@@ -108,12 +171,33 @@ void DirectoryMonitor::run()
 			break;
 		}
 
+		read_pending = true;
+
+		// logs saved before the directory was watched, the first log creates it
+		if (waited)
+		{
+			waited = false;
+
+			try
+			{
+				for (const auto& entry : std::filesystem::recursive_directory_iterator(monitor_directory))
+					if (is_log_file(entry.path()) && found_logs.insert(entry.path()).second)
+						add_log_file(entry.path());
+			}
+			catch (const std::exception& e)
+			{
+				addon::log("Failed to read the log directory: " + std::string(e.what()), LOGLEVEL_WARNING);
+			}
+		}
+
 		HANDLE events[] = { stop_event, monitor_overlapped.hEvent };
 
 		auto wait_result = WaitForMultipleObjects(2, events, FALSE, INFINITE);
 
 		if (wait_result == WAIT_OBJECT_0 + 1)
 		{
+			read_pending = false;
+
 			DWORD bytes_transferred;
 
 			if (GetOverlappedResult(directory_handle, &monitor_overlapped, &bytes_transferred, TRUE))
@@ -133,38 +217,11 @@ void DirectoryMonitor::run()
 				{
 					if (fni->Action == FILE_ACTION_RENAMED_NEW_NAME)
 					{
-						auto file_name = std::filesystem::path(std::wstring(fni->FileName, fni->FileNameLength / sizeof(wchar_t)));
+						auto file_path = monitor_directory / std::wstring(fni->FileName, fni->FileNameLength / sizeof(wchar_t));
 
-						auto extension = file_name.extension();
-
-						if (extension == ".evtc" || extension == ".zevtc")
-						{
-							{
-								static const auto is_file_openable = [](const std::filesystem::path& log_path) -> bool {
-									std::ifstream file_stream(log_path);
-									return file_stream.is_open();
-								};
-
-								auto file_path = monitor_directory / file_name;
-
-								auto log_available = is_file_openable(file_path);
-
-								for (auto cooldown = 1; !log_available && cooldown < 150; ++cooldown)
-								{
-									std::this_thread::sleep_for(std::chrono::milliseconds(cooldown));
-									log_available = is_file_openable(file_path);
-								}
-
-								if (log_available)
-								{
-									addon::log("New evtc file detected: " + addon::to_utf8(file_path), LOGLEVEL_DEBUG);
-
-									addon::log_manager->add_log(file_path);
-								}
-								else
-									addon::log("Evtc file unavailable: " + addon::to_utf8(file_path), LOGLEVEL_WARNING);
-							}
-						}
+						// logs found right after the directory was created are added already
+						if (is_log_file(file_path) && !found_logs.erase(file_path))
+							add_log_file(file_path);
 					}
 
 					fni = (fni->NextEntryOffset != 0) ? reinterpret_cast<FILE_NOTIFY_INFORMATION*>(reinterpret_cast<BYTE*>(fni) + fni->NextEntryOffset) : nullptr;
@@ -181,11 +238,14 @@ void DirectoryMonitor::run()
 		}
 	}
 
-	// cancel the pending read before its buffer is released
-	CancelIoEx(directory_handle, &monitor_overlapped);
+	// cancel the pending read before its buffer is released, a read that failed to start never completes
+	if (read_pending)
+	{
+		CancelIoEx(directory_handle, &monitor_overlapped);
 
-	DWORD bytes_transferred;
-	GetOverlappedResult(directory_handle, &monitor_overlapped, &bytes_transferred, TRUE);
+		DWORD bytes_transferred;
+		GetOverlappedResult(directory_handle, &monitor_overlapped, &bytes_transferred, TRUE);
+	}
 
 	if (monitor_overlapped.hEvent != NULL)
 	{
