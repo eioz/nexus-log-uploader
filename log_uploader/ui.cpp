@@ -104,7 +104,9 @@ void UI::draw_display_options(SettingsData& settings)
 	ImGui::ID id("Display Settings");
 
 	UI_CHECKBOX("Fixed size", display.log_table.fixed_size);
-	if (!settings.display.log_table.fixed_size)
+
+	// the current size is known once the window was shown
+	if (!settings.display.log_table.fixed_size && this->logs_table.window_size.x > 0)
 	{
 		ImGui::SameLine();
 		if (ImGui::Button("Set to current size"))
