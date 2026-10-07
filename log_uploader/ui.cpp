@@ -84,16 +84,17 @@ void UI::render_context_menu()
 		draw_parser_options(settings);
 		ImGui::EndMenu();
 	}
-	ImGui::SetNextWindowSize(ImVec2(800, 0));
+	// the width comes from the content, a next window size leaks to another window while the menu stays closed
 	if (ImGui::BeginMenu("dps.report"))
 	{
 		draw_dps_report_options(settings);
+		ImGui::Dummy(ImVec2(800, 0));
 		ImGui::EndMenu();
 	}
-	ImGui::SetNextWindowSize(ImVec2(800, 0));
 	if (ImGui::BeginMenu("Wingman"))
 	{
 		draw_wingman_options(settings);
+		ImGui::Dummy(ImVec2(800, 0));
 		ImGui::EndMenu();
 	}
 }
