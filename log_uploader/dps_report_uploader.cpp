@@ -6,7 +6,8 @@
 
 IMPLEMENT_MODULE(DPSReportUploader, dps_report_uploader)
 
-#define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(60)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
+// dps.report answers once the report is generated, which takes up to 15 minutes under heavy load
+#define CPR_PARAMETERS cpr::Timeout(std::chrono::minutes(15)), cpr::ProgressCallback([this](auto...) { return initialized.load(); })
 #define UPLOAD_CONTENT_URL "https://dps.report/uploadContent"
 
 void DPSReportUploader::add_log(std::shared_ptr<Log> log)
