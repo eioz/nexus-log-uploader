@@ -62,7 +62,9 @@ enum class TriggerID : uint16_t
 	PrototypeVermilion = 25413,
 	PrototypeVermilionCM = 25414,
 	PrototypeArsenite = 25415,
+	PrototypeArseniteCM = 25416,
 	PrototypeIndigo = 25419,
+	PrototypeIndigoCM = 25423,
 	// The Icebrood Saga
 	IcebroodConstruct = 22154,
 	VoiceOfTheFallen = 22343,
@@ -84,7 +86,8 @@ enum class TriggerID : uint16_t
 	TheSniper = 23612,
 	TheMechRider = 24660,
 	TheDragonvoid = 43488,
-	VoidAmalgamate = 23956,
+	TheDragonvoidFinal = 1378,
+	VoidAmalgamate = 24375,
 	// Secrets of the Obscure
 	Dagda = 25705,
 	Cerus = 25989,
@@ -206,7 +209,7 @@ inline const std::vector<EncounterCategory> EncounterCategories = {
   } },
   { "Raids (Strike Missions)", {
     { "Core", {
-      { "Old Lion's Court", { TriggerID::PrototypeVermilion, TriggerID::PrototypeVermilionCM, TriggerID::PrototypeArsenite, TriggerID::PrototypeIndigo }, IDR_ENCOUNTER_OLD_LIONS_COURT },
+      { "Old Lion's Court", { TriggerID::PrototypeVermilion, TriggerID::PrototypeVermilionCM, TriggerID::PrototypeArsenite, TriggerID::PrototypeArseniteCM, TriggerID::PrototypeIndigo, TriggerID::PrototypeIndigoCM }, IDR_ENCOUNTER_OLD_LIONS_COURT },
     } },
     { "The Icebrood Saga", {
       { "Shiverpeaks Pass", { TriggerID::IcebroodConstruct }, IDR_ENCOUNTER_SHIVERPEAKS_PASS },
@@ -219,7 +222,7 @@ inline const std::vector<EncounterCategory> EncounterCategories = {
       { "Aetherblade Hideout", { TriggerID::MaiTrin, TriggerID::EchoOfScarletBriar }, IDR_ENCOUNTER_AETHERBLADE_HIDEOUT },
       { "Xunlai Jade Junkyard", { TriggerID::Ankka }, IDR_ENCOUNTER_XUNLAI_JADE_JUNKYARD },
       { "Kaineng Overlook", { TriggerID::MinisterLi, TriggerID::MinisterLiCM, TriggerID::TheRitualist, TriggerID::TheMindblade, TriggerID::TheEnforcer, TriggerID::TheSniper, TriggerID::TheMechRider }, IDR_ENCOUNTER_KAINENG_OVERLOOK },
-      { "Harvest Temple", { TriggerID::TheDragonvoid, TriggerID::VoidAmalgamate }, IDR_ENCOUNTER_HARVEST_TEMPLE },
+      { "Harvest Temple", { TriggerID::TheDragonvoid, TriggerID::TheDragonvoidFinal, TriggerID::VoidAmalgamate }, IDR_ENCOUNTER_HARVEST_TEMPLE },
     } },
     { "Secrets of the Obscure", {
       { "Cosmic Observatory", { TriggerID::Dagda }, IDR_ENCOUNTER_COSMIC_OBSERVATORY },

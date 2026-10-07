@@ -1,10 +1,28 @@
 #include "settings.h"
 #include "addon.h"
 
+#include <algorithm>
 #include <fstream>
 #include <nlohmann/json.hpp>
 
 IMPLEMENT_MODULE(Settings, settings)
+
+namespace
+{
+// encounters that got more trigger ids stay selected
+void select_new_triggers(EncounterSelection& selection)
+{
+	auto selected = [&](TriggerID trigger) { return std::find(selection.begin(), selection.end(), trigger) != selection.end(); };
+
+	for (const auto& category : EncounterCategories)
+		for (const auto& instance : category.instances)
+			for (const auto& encounter : instance.encounters)
+				if (std::any_of(encounter.triggers.begin(), encounter.triggers.end(), selected))
+					for (auto trigger : encounter.triggers)
+						if (!selected(trigger))
+							selection.push_back(trigger);
+}
+} // namespace
 
 void Settings::initialize()
 {
@@ -76,6 +94,9 @@ bool Settings::load()
 		target_json.merge_patch(json);
 
 		data = target_json.get<SettingsData>();
+
+		select_new_triggers(data.dps_report.auto_upload_encounters);
+		select_new_triggers(data.wingman.auto_upload_encounters);
 
 		return true;
 	}
