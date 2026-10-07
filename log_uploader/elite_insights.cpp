@@ -319,12 +319,22 @@ void EliteInsights::install()
 
 			const auto download = cpr::Get(cpr::Url{ latest_version.download_url }, CPR_PARAMETERS);
 
+			mz_zip_archive zip_archive{};
+			mz_zip_zero_struct(&zip_archive);
+			auto downloaded = download.status_code == 200 && mz_zip_reader_init_mem(&zip_archive, reinterpret_cast<const unsigned char*>(download.text.c_str()), download.text.size(), 0);
+
+			// a failed update keeps the installed version
+			if (!downloaded && installed)
+			{
+				addon::log("Failed to download Elite Insights " + latest_version.get_tag() + ", keeping " + local_version.get_tag(), LOGLEVEL_WARNING);
+				this->installed.store(true);
+				return;
+			}
+
 			if (download.status_code != 200)
 				throw std::runtime_error("Invalid HTTP status code: " + (download.status_code == 0 ? std::string("timeout") : std::to_string(download.status_code)));
 
-			mz_zip_archive zip_archive{};
-			mz_zip_zero_struct(&zip_archive);
-			if (!mz_zip_reader_init_mem(&zip_archive, reinterpret_cast<const unsigned char*>(download.text.c_str()), download.text.size(), 0))
+			if (!downloaded)
 				throw std::runtime_error("Failed to initialize zip archive");
 
 			if (std::filesystem::exists(installation_directory))
