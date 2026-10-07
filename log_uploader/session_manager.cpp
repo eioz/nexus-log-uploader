@@ -11,9 +11,6 @@ IMPLEMENT_MODULE(SessionManager, session_manager)
 #define SESSION_FILE "session.json"
 #define REPORTS_DIRECTORY "reports"
 
-// a new log starts a new session after this long without logs
-#define SESSION_TIMEOUT std::chrono::hours(2)
-
 namespace
 {
 struct SessionFile
@@ -123,19 +120,6 @@ void SessionManager::initialize()
 		addon::log("Failed to read sessions: " + std::string(e.what()), LOGLEVEL_WARNING);
 	}
 
-	// continue the latest session after a restart or reload
-	auto latest = std::max_element(sessions.begin(), sessions.end(), [](const auto& a, const auto& b) { return a.second.end_time < b.second.end_time; });
-
-	if (latest != sessions.end() && !latest->second.archived && std::chrono::system_clock::now() - latest->second.end_time < SESSION_TIMEOUT)
-	{
-		auto id = latest->first;
-
-		load_session(id);
-
-		if (session_logs.contains(id))
-			current_session_id = id;
-	}
-
 	running = true;
 	session_thread = std::thread(&SessionManager::run, this);
 }
@@ -161,7 +145,7 @@ void SessionManager::add_log(std::shared_ptr<Log> log)
 
 	auto time = log->evtc_file_time;
 
-	if (current_session_id.empty() || time - sessions[current_session_id].end_time > SESSION_TIMEOUT)
+	if (current_session_id.empty())
 		current_session_id = create_session(time);
 
 	auto& info = sessions[current_session_id];
@@ -182,6 +166,15 @@ void SessionManager::start_new_session()
 {
 	std::lock_guard lock(mutex);
 	current_session_id.clear();
+}
+
+void SessionManager::resume_session(const std::string& session_id)
+{
+	std::lock_guard lock(mutex);
+
+	// new logs are added to the loaded logs of the session
+	if (session_logs.contains(session_id) && !sessions[session_id].archived)
+		current_session_id = session_id;
 }
 
 bool SessionManager::set_archived(const std::string& session_id, bool archived)

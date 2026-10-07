@@ -31,6 +31,7 @@ public:
 
 	void add_log(std::shared_ptr<Log> log);
 	void start_new_session();
+	void resume_session(const std::string& session_id);
 	bool set_archived(const std::string& session_id, bool archived);
 	bool delete_session(const std::string& session_id);
 

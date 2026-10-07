@@ -832,9 +832,12 @@ void LogsTable::draw_empty_session()
 		if (!session.archived && session.id != current_session_id && (!last_session || session.end_time > last_session->end_time))
 			last_session = session;
 
+	// the last session can be resumed once its logs are loaded in the background
+	auto resumable = last_session && !addon::session_manager->get_logs(last_session->id).empty();
+
 	auto& style = ImGui::GetStyle();
 	auto available = ImGui::GetContentRegionAvail();
-	auto height = 2 * ImGui::GetTextLineHeightWithSpacing() + (last_session ? style.ItemSpacing.y + ImGui::GetFrameHeight() : 0.f);
+	auto height = 2 * ImGui::GetTextLineHeightWithSpacing() + (resumable ? style.ItemSpacing.y + ImGui::GetFrameHeight() : 0.f);
 	auto left = ImGui::GetCursorPosX();
 
 	auto center = [&](float width) { ImGui::SetCursorPosX(left + std::max((available.x - width) * 0.5f, 0.f)); };
@@ -846,14 +849,17 @@ void LogsTable::draw_empty_session()
 	center(ImGui::CalcTextSize("Right-click for sessions and settings").x);
 	ImGui::TextDisabled("Right-click for sessions and settings");
 
-	if (!last_session)
+	if (!resumable)
 		return;
 
 	ImGui::Dummy(ImVec2(0.f, style.ItemSpacing.y));
-	center(ImGui::CalcTextSize("Show last session").x + 2 * style.FramePadding.x);
+	center(ImGui::CalcTextSize("Resume last session").x + 2 * style.FramePadding.x);
 
-	if (ImGui::Button("Show last session"))
-		viewed_session_id = last_session->id;
+	if (ImGui::Button("Resume last session"))
+	{
+		addon::session_manager->resume_session(last_session->id);
+		viewed_session_id.clear();
+	}
 }
 
 Texture_t* LogsTable::get_portrait(const LogData& data)
