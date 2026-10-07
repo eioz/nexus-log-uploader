@@ -66,11 +66,9 @@ void Parser::run()
 	}
 	catch (const std::exception& e)
 	{
+		// logs fail to parse until the next start installs it
 		if (loaded.load())
 			addon::log("Failed to install Elite Insights: " + std::string(e.what()), LOGLEVEL_CRITICAL);
-
-		loaded.store(false);
-		return;
 	}
 
 	while (true)
