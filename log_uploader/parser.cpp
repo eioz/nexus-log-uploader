@@ -47,6 +47,7 @@ void Parser::add_log(std::shared_ptr<Log> log)
 
 	log->parser_data.status = ParseStatus::QUEUED;
 	log->parser_data.error_message.reset();
+	log->update_view();
 
 	{
 		std::unique_lock parser_queue_lock(parser_queue_mutex);
