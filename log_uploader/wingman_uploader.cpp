@@ -183,27 +183,56 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 		data = log->get_data();
 	}
 
-	auto& encounter = data.parser_data.encounter;
-
-	// wingman only has statistics of bosses
-	if (data.parser_data.status != ParseStatus::PARSED || !encounter.has_boss)
+	if (data.parser_data.status != ParseStatus::PARSED)
 		return;
 
+	auto& encounter = data.parser_data.encounter;
 	auto statistics = data.wingman_statistics;
 	auto url = data.wingman_upload.url;
-	auto boss_id = std::to_string(static_cast<int>(data.trigger_id));
 
-	// challenge modes have their own statistics
-	auto key = boss_id;
+	// the report link comes first, failed statistics requests leave it alone
+	if (url.empty() && (data.wingman_upload.status == UploadStatus::UPLOADED || data.wingman_upload.status == UploadStatus::SKIPPED))
+	{
+		try
+		{
+			cpr::Multipart multipart = { { "file", data.evtc_file_path.filename().string() }, { "filesize", std::to_string(std::filesystem::file_size(data.evtc_file_path)) }, { "bossID", std::to_string(static_cast<int>(data.trigger_id)) } };
 
-	if (encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE)
-		key = "-" + boss_id;
-	else if (encounter.difficulty == EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
-		key = "--" + boss_id;
+			auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/checkUploadSuccessfulWithLog"), multipart, CPR_API_PARAMETERS));
+
+			if (json.value("success", false))
+				url = WINGMAN_URL "/log/" + json.at("log").at("html").get<std::string>();
+		}
+		catch (const std::exception& e)
+		{
+			if (initialized.load())
+				addon::log("Failed to get the Wingman link for " + data.id + ". Error: " + e.what(), LOGLEVEL_WARNING);
+		}
+
+		std::unique_lock lock(log->mutex);
+
+		log->wingman_upload.url = url;
+		log->update_view();
+	}
 
 	// missing statistics are requested again with the next update, the first error stops this one
 	try
 	{
+		auto wingman_boss_id = get_boss_id(data);
+
+		// wingman only has statistics of the bosses it knows
+		if (!wingman_boss_id)
+			return;
+
+		auto boss_id = std::to_string(*wingman_boss_id);
+
+		// challenge modes have their own statistics
+		auto key = boss_id;
+
+		if (encounter.difficulty == EncounterDifficulty::CHALLENGE_MODE)
+			key = "-" + boss_id;
+		else if (encounter.difficulty == EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
+			key = "--" + boss_id;
+
 		// legendary challenge modes have no kill percentiles
 		if (!statistics.kill_percentile && encounter.success && encounter.difficulty != EncounterDifficulty::LEGENDARY_CHALLENGE_MODE)
 		{
@@ -265,16 +294,6 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 			statistics.ranks[player.account] = ranks[player.account];
 		}
 
-		if (url.empty() && (data.wingman_upload.status == UploadStatus::UPLOADED || data.wingman_upload.status == UploadStatus::SKIPPED))
-		{
-			cpr::Multipart multipart = { { "file", data.evtc_file_path.filename().string() }, { "filesize", std::to_string(std::filesystem::file_size(data.evtc_file_path)) }, { "bossID", boss_id } };
-
-			auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/checkUploadSuccessfulWithLog"), multipart, CPR_API_PARAMETERS));
-
-			if (json.value("success", false))
-				url = WINGMAN_URL "/log/" + json.at("log").at("html").get<std::string>();
-		}
-
 		auto unrated = std::any_of(data.parser_data.players.begin(), data.parser_data.players.end(), [&](const auto& player) { return !statistics.dps_percentiles.contains(player.account); });
 
 		if (!url.empty() && encounter.success && unrated)
@@ -321,8 +340,44 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 	std::unique_lock lock(log->mutex);
 
 	log->wingman_statistics = statistics;
-	log->wingman_upload.url = url;
 	log->update_view();
+}
+
+// wingman counts some encounters as another boss and splits ai into its phases
+std::optional<int> WingmanUploader::get_boss_id(const LogData& data)
+{
+	// elite insights names logs of a single phase after it
+	if (data.trigger_id == TriggerID::AiKeeperOfThePeak)
+	{
+		auto& name = data.parser_data.encounter.name;
+
+		if (name.starts_with("Elemental"))
+			return 23254;
+
+		if (name.starts_with("Dark"))
+			return 232542;
+
+		return 232543;
+	}
+
+	// wingman lists river of souls without target ids
+	if (data.trigger_id == TriggerID::RiverOfSouls)
+		return static_cast<int>(TriggerID::RiverOfSouls);
+
+	if (boss_list.is_null())
+		boss_list = get_json(cpr::Get(cpr::Url(WINGMAN_URL "/api/bosses"), CPR_API_PARAMETERS));
+
+	auto trigger_id = static_cast<int>(data.trigger_id);
+
+	for (const auto& [id, boss] : boss_list.items())
+	{
+		auto targets = boss.value("targetIDs", nlohmann::json::array());
+
+		if (std::find(targets.begin(), targets.end(), trigger_id) != targets.end())
+			return std::stoi(id);
+	}
+
+	return std::nullopt;
 }
 
 // the balance patch a log was recorded in

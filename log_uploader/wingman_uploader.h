@@ -28,6 +28,7 @@ private:
 	void update_statistics(std::shared_ptr<Log> log);
 
 	std::string get_era(std::chrono::system_clock::time_point time);
+	std::optional<int> get_boss_id(const LogData& data);
 
 	bool get_server_availability();
 
@@ -35,6 +36,7 @@ private:
 
 	// kept until the addon is unloaded, only used by the upload thread
 	nlohmann::json patches;
+	nlohmann::json boss_list; // with the target ids wingman counts as each boss
 	std::map<std::string, nlohmann::json> bosses;
 	std::map<std::string, std::string> ranks;
 };
