@@ -167,7 +167,10 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 		{
 			nlohmann::json json = nlohmann::json::parse(response.text);
 
-			if (json.contains("error") && !json.at("error").is_null())
+			// the report can be generated despite an error
+			auto has_report = json.contains("permalink") && json.at("permalink").is_string() && !json.at("permalink").get<std::string>().empty();
+
+			if (!has_report && json.contains("error") && !json.at("error").is_null())
 			{
 				if (json.at("error").is_string())
 					throw std::runtime_error(json.at("error").get<std::string>());
