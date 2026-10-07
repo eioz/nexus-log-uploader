@@ -126,6 +126,10 @@ void DPSReportUploader::run()
 		}
 		catch (const std::exception& e)
 		{
+			// an upload cancelled by unloading is reset when its session is loaded again
+			if (!initialized.load())
+				break;
+
 			upload.status = UploadStatus::FAILED;
 			upload.error_message = e.what();
 			addon::log("dps.report upload failed for " + id + ". Error: " + e.what(), LOGLEVEL_WARNING);

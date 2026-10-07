@@ -119,6 +119,10 @@ void Parser::run()
 		}
 		catch (const std::exception& e)
 		{
+			// a parse cancelled by unloading is reset when its session is loaded again
+			if (!loaded.load())
+				continue;
+
 			std::unique_lock lock(log->mutex);
 			// logs of archived sessions keep their summary
 			log->parser_data.status = log->parser_data.encounter.name.empty() ? ParseStatus::FAILED : ParseStatus::PARSED;

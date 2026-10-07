@@ -62,8 +62,9 @@ SessionFile read_session(const std::filesystem::path& path)
 	// work that was still queued or running when the addon was unloaded
 	for (auto& data : file.logs)
 	{
+		// logs of archived sessions keep their summary
 		if (data.parser_data.status == ParseStatus::QUEUED || data.parser_data.status == ParseStatus::PARSING)
-			data.parser_data.status = ParseStatus::UNPARSED;
+			data.parser_data.status = data.parser_data.encounter.name.empty() ? ParseStatus::UNPARSED : ParseStatus::PARSED;
 
 		if (data.dps_report_upload.status == UploadStatus::QUEUED || data.dps_report_upload.status == UploadStatus::UPLOADING)
 			data.dps_report_upload.status = UploadStatus::AVAILABLE;
