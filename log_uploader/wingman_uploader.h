@@ -18,8 +18,6 @@ public:
 	// requests the missing link and statistics of a parsed log in the background
 	void request_statistics(std::shared_ptr<Log> log);
 
-	std::atomic<bool> servers_available = false;
-
 private:
 	void run() override;
 

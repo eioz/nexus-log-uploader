@@ -546,8 +546,6 @@ bool WingmanUploader::get_server_availability()
 
 		servers_available_cached = (response.status_code == 200 && response.text == "True");
 
-		this->servers_available.store(servers_available_cached);
-
 		return servers_available_cached;
 	}
 
