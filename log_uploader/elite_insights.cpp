@@ -219,7 +219,8 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point {
 				std::istringstream ss(utc_time_str);
 				std::chrono::system_clock::time_point tp;
-				ss >> std::chrono::parse("%F %T %z", tp);
+				// the offset has a colon, for example +05:30
+				ss >> std::chrono::parse("%F %T %Ez", tp);
 				return tp;
 			};
 
