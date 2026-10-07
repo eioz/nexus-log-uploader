@@ -105,8 +105,6 @@ void load(AddonAPI_t* addon_api)
 
 void unload()
 {
-	addon::settings->release();
-
 	addon::api->InputBinds_Deregister(HOTKEY_UI);
 	addon::api->QuickAccess_Remove(QUICK_ACCESS_UI);
 
@@ -119,6 +117,9 @@ void unload()
 	addon::wingman_uploader->release();
 
 	addon::session_manager->release();
+
+	// saved last because the uploaders can still change them, for example the dps.report token
+	addon::settings->release();
 }
 
 AddonDefinition_t addon_definition;
