@@ -35,7 +35,7 @@ std::filesystem::path get_log_directory()
 
 	if (!std::filesystem::exists(ini_path))
 	{
-		addon::log("arcdps.ini not found at " + ini_path.string() + ", using default log path", LOGLEVEL_DEBUG);
+		addon::log("arcdps.ini not found at " + to_utf8(ini_path) + ", using default log path", LOGLEVEL_DEBUG);
 		return {};
 	}
 
@@ -55,6 +55,12 @@ std::filesystem::path get_log_directory()
 	}
 
 	return std::filesystem::path(boss_path) / "arcdps.cbtlogs";
+}
+
+std::string to_utf8(const std::filesystem::path& path)
+{
+	auto text = path.u8string();
+	return std::string(text.begin(), text.end());
 }
 
 std::string get_icon_texture(unsigned resource_id)

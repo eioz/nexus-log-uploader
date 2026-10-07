@@ -210,7 +210,7 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 	{
 		try
 		{
-			cpr::Multipart multipart = { { "file", data.evtc_file_path.filename().string() }, { "filesize", std::to_string(std::filesystem::file_size(data.evtc_file_path)) }, { "bossID", std::to_string(static_cast<int>(data.trigger_id)) } };
+			cpr::Multipart multipart = { { "file", addon::to_utf8(data.evtc_file_path.filename()) }, { "filesize", std::to_string(std::filesystem::file_size(data.evtc_file_path)) }, { "bossID", std::to_string(static_cast<int>(data.trigger_id)) } };
 
 			auto json = get_json(cpr::Post(cpr::Url(WINGMAN_URL "/checkUploadSuccessfulWithLog"), multipart, CPR_API_PARAMETERS));
 
@@ -459,7 +459,7 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 			WIN32_FILE_ATTRIBUTE_DATA file_info;
 
 			if (!GetFileAttributesExW(file_path.wstring().c_str(), GetFileExInfoStandard, &file_info))
-				throw std::runtime_error("Unable to get file attributes for " + file_path.string());
+				throw std::runtime_error("Unable to get file attributes for " + addon::to_utf8(file_path));
 
 			FILETIME file_time = file_info.ftCreationTime;
 			SYSTEMTIME system_time;
@@ -485,7 +485,7 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 		auto file_size = std::filesystem::file_size(log_data.evtc_file_path);
 		auto file_creation_time = get_file_creation_time(log_data.evtc_file_path);
 
-		cpr::Multipart multipart = { { "file", log_data.evtc_file_path.filename().string() }, { "timestamp", std::to_string(file_creation_time) }, { "filesize", std::to_string(file_size) }, { "account", log_data.parser_data.encounter.account_name },
+		cpr::Multipart multipart = { { "file", addon::to_utf8(log_data.evtc_file_path.filename()) }, { "timestamp", std::to_string(file_creation_time) }, { "filesize", std::to_string(file_size) }, { "account", log_data.parser_data.encounter.account_name },
 			{ "triggerID", std::to_string(static_cast<int>(log_data.trigger_id)) } };
 
 		auto response = cpr::Post(cpr::Url(WINGMAN_URL "/checkUpload"), CPR_PARAMETERS, multipart);
@@ -509,8 +509,8 @@ WingmanUpload WingmanUploader::upload(LogData& log_data)
 
 	// upload processed
 	{
-		cpr::Multipart multipart = { { "file", cpr::File(log_data.evtc_file_path.string(), log_data.evtc_file_path.filename().string()) }, { "jsonfile", cpr::File(log_data.parser_data.json_file_path.string(), log_data.parser_data.json_file_path.filename().string()) },
-			{ "htmlfile", cpr::File(log_data.parser_data.html_file_path.string(), log_data.parser_data.html_file_path.filename().string()) }, { "account", log_data.parser_data.encounter.account_name } };
+		cpr::Multipart multipart = { { "file", cpr::File(addon::to_utf8(log_data.evtc_file_path), addon::to_utf8(log_data.evtc_file_path.filename())) }, { "jsonfile", cpr::File(addon::to_utf8(log_data.parser_data.json_file_path), addon::to_utf8(log_data.parser_data.json_file_path.filename())) },
+			{ "htmlfile", cpr::File(addon::to_utf8(log_data.parser_data.html_file_path), addon::to_utf8(log_data.parser_data.html_file_path.filename())) }, { "account", log_data.parser_data.encounter.account_name } };
 
 		auto response = cpr::Post(cpr::Url(WINGMAN_URL "/uploadProcessed"), CPR_PARAMETERS, multipart);
 

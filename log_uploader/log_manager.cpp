@@ -34,6 +34,6 @@ void LogManager::add_log(std::filesystem::path evtc_file_path)
 	}
 	catch (const std::exception& e)
 	{
-		addon::log("Failed to add log: Evtc parsing failed. File: \"" + evtc_file_path.string() + "\" Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to add log: Evtc parsing failed. File: \"" + addon::to_utf8(evtc_file_path) + "\" Exception: " + e.what(), LOGLEVEL_WARNING);
 	}
 }

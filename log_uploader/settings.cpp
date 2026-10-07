@@ -81,7 +81,7 @@ bool Settings::load()
 	}
 	catch (const std::exception& e)
 	{
-		addon::log("Failed to load settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to load settings file: " + addon::to_utf8(file_path) + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }
@@ -117,7 +117,7 @@ bool Settings::save(const SettingsData& settings)
 	}
 	catch (const std::exception& e)
 	{
-		addon::log("Failed to save settings file: " + file_path.string() + " Exception: " + e.what(), LOGLEVEL_WARNING);
+		addon::log("Failed to save settings file: " + addon::to_utf8(file_path) + " Exception: " + e.what(), LOGLEVEL_WARNING);
 		return false;
 	}
 }

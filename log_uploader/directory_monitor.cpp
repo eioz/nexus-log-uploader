@@ -43,7 +43,7 @@ void DirectoryMonitor::initialize()
 
 	initialized.store(true);
 
-	addon::log("Monitoring directory: " + monitor_directory.string(), LOGLEVEL_INFO);
+	addon::log("Monitoring directory: " + addon::to_utf8(monitor_directory), LOGLEVEL_INFO);
 
 	this->monitor_thread = std::thread(&DirectoryMonitor::run, this);
 }
@@ -72,7 +72,7 @@ void DirectoryMonitor::run()
 {
 	if (monitor_directory.empty() || !std::filesystem::exists(monitor_directory))
 	{
-		addon::log("Directory monitor not started: path does not exist: " + monitor_directory.string(), LOGLEVEL_WARNING);
+		addon::log("Directory monitor not started: path does not exist: " + addon::to_utf8(monitor_directory), LOGLEVEL_WARNING);
 		return;
 	}
 
@@ -96,7 +96,7 @@ void DirectoryMonitor::run()
 		return;
 	}
 
-	addon::log("Started monitoring: " + monitor_directory.string(), LOGLEVEL_DEBUG);
+	addon::log("Started monitoring: " + addon::to_utf8(monitor_directory), LOGLEVEL_DEBUG);
 
 	while (true)
 	{
@@ -135,7 +135,7 @@ void DirectoryMonitor::run()
 					{
 						auto file_name = std::filesystem::path(std::wstring(fni->FileName, fni->FileNameLength / sizeof(wchar_t)));
 
-						auto extension = file_name.extension().string();
+						auto extension = file_name.extension();
 
 						if (extension == ".evtc" || extension == ".zevtc")
 						{
@@ -157,12 +157,12 @@ void DirectoryMonitor::run()
 
 								if (log_available)
 								{
-									addon::log("New evtc file detected: " + file_path.string(), LOGLEVEL_DEBUG);
+									addon::log("New evtc file detected: " + addon::to_utf8(file_path), LOGLEVEL_DEBUG);
 
 									addon::log_manager->add_log(file_path);
 								}
 								else
-									addon::log("Evtc file unavailable: " + file_path.string(), LOGLEVEL_WARNING);
+									addon::log("Evtc file unavailable: " + addon::to_utf8(file_path), LOGLEVEL_WARNING);
 							}
 						}
 					}

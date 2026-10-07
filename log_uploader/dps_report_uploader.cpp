@@ -143,7 +143,7 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 {
 	cpr::Url url(UPLOAD_CONTENT_URL);
 	cpr::Parameters parameters{};
-	cpr::Multipart multipart{ { "file", cpr::File(evtc_file_path.string(), evtc_file_path.filename().string()) }, { "json", "1" } };
+	cpr::Multipart multipart{ { "file", cpr::File(addon::to_utf8(evtc_file_path), addon::to_utf8(evtc_file_path.filename())) }, { "json", "1" } };
 
 	auto settings = addon::settings->get().dps_report;
 

@@ -29,7 +29,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 
 		mz_zip_zero_struct(&zip_archive);
 
-		if (!mz_zip_reader_init_file(&zip_archive, evtc_file_path.string().c_str(), 0))
+		if (!mz_zip_reader_init_file(&zip_archive, addon::to_utf8(evtc_file_path).c_str(), 0))
 			throw std::runtime_error("Failed to open zip archive");
 
 		mz_zip_archive_file_stat file_stat;
@@ -55,7 +55,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 		std::ifstream file_stream(evtc_file_path, std::ios::binary | std::ios::ate);
 
 		if (!file_stream.is_open())
-			throw std::runtime_error("Failed to open file: " + evtc_file_path.string());
+			throw std::runtime_error("Failed to open file: " + addon::to_utf8(evtc_file_path));
 
 		std::streamsize size = file_stream.tellg();
 		file_data.resize(size);
@@ -65,7 +65,7 @@ EVTCParserData EVTCParser::parse(const std::filesystem::path& evtc_file_path)
 		if (!file_stream.read(reinterpret_cast<char*>(file_data.data()), size))
 		{
 			file_stream.close();
-			throw std::runtime_error("Failed to read file: " + evtc_file_path.string());
+			throw std::runtime_error("Failed to read file: " + addon::to_utf8(evtc_file_path));
 		}
 	}
 

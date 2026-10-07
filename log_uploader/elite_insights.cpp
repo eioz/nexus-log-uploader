@@ -99,7 +99,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 
 	if (!std::filesystem::exists(evtc_file_path))
 	{
-		throw std::runtime_error("EVTC file does not exist: " + evtc_file_path.string());
+		throw std::runtime_error("EVTC file does not exist: " + addon::to_utf8(evtc_file_path));
 	}
 
 	SECURITY_ATTRIBUTES sa = { sizeof(sa), NULL, TRUE };
@@ -117,7 +117,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 
 	if (!std::filesystem::exists(output_directory))
 		if (!std::filesystem::create_directories(output_directory))
-			throw std::runtime_error("Failed to create Elite Insights output directory: " + output_directory.string());
+			throw std::runtime_error("Failed to create Elite Insights output directory: " + addon::to_utf8(output_directory));
 
 	write_settings(output_directory);
 
@@ -164,15 +164,39 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 
 	std::smatch matches;
 
-	std::regex json_regex(R"(Generated:\s*(.+\.json)\s*)");
+	// the result line has the paths escaped, the other lines use the console code page
+	std::regex result_regex(R"(Processed - (.+))");
 
-	if (std::regex_search(output, matches, json_regex) && matches.size() > 1)
-		data.json_file_path = std::filesystem::path(matches[1].str());
+	if (std::regex_search(output, matches, result_regex) && matches.size() > 1)
+	{
+		auto result = nlohmann::json::parse(matches[1].str(), nullptr, false);
 
-	std::regex html_regex(R"(Generated:\s*(.+\.html)\s*)");
+		if (result.is_object() && result.contains("generatedFiles"))
+		{
+			for (const auto& file : result.at("generatedFiles"))
+			{
+				auto path = file.get<std::filesystem::path>();
 
-	if (std::regex_search(output, matches, html_regex) && matches.size() > 1)
-		data.html_file_path = std::filesystem::path(matches[1].str());
+				if (path.extension() == ".json")
+					data.json_file_path = path;
+				else if (path.extension() == ".html")
+					data.html_file_path = path;
+			}
+		}
+	}
+	else
+	{
+		// versions before 3.21 have no result line
+		std::regex json_regex(R"(Generated:\s*(.+\.json)\s*)");
+
+		if (std::regex_search(output, matches, json_regex) && matches.size() > 1)
+			data.json_file_path = std::filesystem::path(matches[1].str());
+
+		std::regex html_regex(R"(Generated:\s*(.+\.html)\s*)");
+
+		if (std::regex_search(output, matches, html_regex) && matches.size() > 1)
+			data.html_file_path = std::filesystem::path(matches[1].str());
+	}
 
 	std::regex success_regex(R"(Parsing Successful)");
 	std::regex failure_regex(R"(Parsing Failure)");
@@ -261,7 +285,7 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 		}
 		else
 		{
-			throw std::runtime_error("Failed to open json file: " + data.json_file_path.string());
+			throw std::runtime_error("Failed to open json file: " + addon::to_utf8(data.json_file_path));
 		}
 	}
 	else
@@ -289,7 +313,7 @@ void EliteInsights::install()
 	if (!std::filesystem::exists(installation_directory))
 		if (!std::filesystem::create_directory(installation_directory))
 		{
-			throw std::runtime_error("Failed to create installation directory: " + installation_directory.string());
+			throw std::runtime_error("Failed to create installation directory: " + addon::to_utf8(installation_directory));
 		}
 
 	auto settings = addon::settings->get().parser;
@@ -363,7 +387,7 @@ void EliteInsights::install()
 				if (!uncompressed_data)
 				{
 					mz_zip_reader_end(&zip_archive);
-					throw std::runtime_error("Failed to extract file from zip archive: " + output_path.string());
+					throw std::runtime_error("Failed to extract file from zip archive: " + addon::to_utf8(output_path));
 				}
 
 				std::ofstream out_file(output_path, std::ios::binary);
@@ -377,7 +401,7 @@ void EliteInsights::install()
 				{
 					mz_free(uncompressed_data);
 					mz_zip_reader_end(&zip_archive);
-					throw std::runtime_error("Failed to write file: " + output_path.string());
+					throw std::runtime_error("Failed to write file: " + addon::to_utf8(output_path));
 				}
 				mz_free(uncompressed_data);
 			}
@@ -392,7 +416,7 @@ void EliteInsights::install()
 				version_file_stream.close();
 			}
 			else
-				throw std::runtime_error("Failed to write version file: " + version_file.string());
+				throw std::runtime_error("Failed to write version file: " + addon::to_utf8(version_file));
 
 			local_version = get_local_version();
 
@@ -440,13 +464,13 @@ SaveOutTrace=false
 SaveAtOut=false
 ParseCombatReplay=true
 SingleThreaded=false
-OutLocation=)" << std::regex_replace(output_directory.string(), std::regex(R"(\\)"), R"(\\)");
+OutLocation=)" << std::regex_replace(addon::to_utf8(output_directory), std::regex(R"(\\)"), R"(\\)");
 
 		settings_file_stream << custom_settings.str();
 		settings_file_stream.close();
 	}
 	else
-		throw std::runtime_error("Failed to write settings file: " + settings_file.string());
+		throw std::runtime_error("Failed to write settings file: " + addon::to_utf8(settings_file));
 }
 
 EliteInsightsVersion EliteInsights::get_local_version()

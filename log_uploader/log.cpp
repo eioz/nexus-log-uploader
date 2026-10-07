@@ -1,4 +1,5 @@
 #include "log.h"
+#include "addon.h"
 #include "ui.h"
 
 #include <ShlObj.h>
@@ -17,10 +18,10 @@ Log::Log(EVTCParserData data)
 			{
 				auto file = std::prev(parts.end());
 				if (boss != file)
-					return boss->string() + "/" + file->string();
+					return addon::to_utf8(*boss) + "/" + addon::to_utf8(*file);
 			}
 		}
-		return p.string();
+		return addon::to_utf8(p);
 	};
 
 	id = extract_log_identifier(evtc_file_path);

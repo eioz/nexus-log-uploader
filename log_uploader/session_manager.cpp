@@ -29,7 +29,7 @@ nlohmann::json read_json(const std::filesystem::path& path)
 	std::ifstream file(path);
 
 	if (!file.is_open())
-		throw std::runtime_error("Failed to open " + path.string());
+		throw std::runtime_error("Failed to open " + addon::to_utf8(path));
 
 	return nlohmann::json::parse(file);
 }
@@ -40,11 +40,13 @@ void write_json(const std::filesystem::path& path, const nlohmann::json& json)
 	temporary_path += ".tmp";
 
 	std::ofstream file(temporary_path, std::ios::binary | std::ios::trunc);
-	file << json.dump();
+
+	// error messages from windows and elite insights can use other code pages
+	file << json.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace);
 	file.close();
 
 	if (!file)
-		throw std::runtime_error("Failed to write " + temporary_path.string());
+		throw std::runtime_error("Failed to write " + addon::to_utf8(temporary_path));
 
 	// the previous file stays intact until the new one is complete
 	std::filesystem::rename(temporary_path, path);
@@ -471,7 +473,7 @@ void SessionManager::save()
 		std::filesystem::remove_all(path, ec);
 
 		if (ec)
-			addon::log("Failed to remove " + path.string() + ": " + ec.message(), LOGLEVEL_WARNING);
+			addon::log("Failed to remove " + addon::to_utf8(path) + ": " + ec.message(), LOGLEVEL_WARNING);
 	}
 
 	if (removed_paths.empty())

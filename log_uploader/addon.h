@@ -36,6 +36,9 @@ void log(const std::string& message, LogLevel level);
 void log(const char* message, LogLevel level);
 std::filesystem::path get_log_directory();
 
+// path::string() uses the ansi code page, json, curl and miniz expect utf-8
+std::string to_utf8(const std::filesystem::path& path);
+
 // embedded icons are loaded as textures named after their resource id
 std::string get_icon_texture(unsigned resource_id);
 Texture_t* get_icon(unsigned resource_id);
