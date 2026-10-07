@@ -13,7 +13,46 @@ void Settings::initialize()
 	file_path = addon::directory / "settings.json";
 
 	if (!std::filesystem::exists(file_path) || !load())
-		save();
+		save(data);
+
+	running = true;
+	save_thread = std::thread(&Settings::run, this);
+}
+
+void Settings::release()
+{
+	{
+		std::lock_guard lock(mutex);
+		running = false;
+	}
+
+	save_cv.notify_all();
+
+	if (save_thread.joinable())
+		save_thread.join();
+
+	save(get());
+}
+
+void Settings::run()
+{
+	std::unique_lock lock(mutex);
+
+	while (true)
+	{
+		save_cv.wait(lock, [this] { return !running || save_required; });
+
+		if (!running)
+			break;
+
+		auto settings = data;
+		save_required = false;
+
+		// the render thread reads the settings every frame, the file is written without the lock
+		lock.unlock();
+		save(settings);
+		lock.lock();
+	}
 }
 
 bool Settings::load()
@@ -47,7 +86,7 @@ bool Settings::load()
 	}
 }
 
-bool Settings::save()
+bool Settings::save(const SettingsData& settings)
 {
 	try
 	{
@@ -55,15 +94,24 @@ bool Settings::save()
 			if (!std::filesystem::create_directories(file_path.parent_path()))
 				throw std::runtime_error("Failed to create directory");
 
-		std::ofstream file(file_path);
+		auto temporary_path = file_path;
+		temporary_path += ".tmp";
+
+		std::ofstream file(temporary_path);
 
 		if (!file.is_open())
 			throw std::runtime_error("Failed to open settings file");
 
-		nlohmann::json json = data;
+		nlohmann::json json = settings;
 
 		file << json.dump(2);
 		file.close();
+
+		if (!file)
+			throw std::runtime_error("Failed to write settings file");
+
+		// a crash while saving leaves the previous file intact
+		std::filesystem::rename(temporary_path, file_path);
 
 		return true;
 	}

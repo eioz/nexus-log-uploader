@@ -6,7 +6,9 @@
 #include <imgui.h>
 #include <nlohmann/json.hpp>
 
+#include <condition_variable>
 #include <shared_mutex>
+#include <thread>
 
 inline void to_json(nlohmann::json& j, const ImVec2& v) { j = nlohmann::json{ { "x", v.x }, { "y", v.y } }; }
 
@@ -124,11 +126,7 @@ class Settings
 {
 public:
 	void initialize();
-	void release()
-	{
-		std::lock_guard lock(mutex);
-		save();
-	}
+	void release();
 
 	SettingsData get() const
 	{
@@ -143,19 +141,27 @@ public:
 		return func(data);
 	}
 
+	// the change is saved in the background
 	template <typename Func>
 	auto write(Func&& func) -> decltype(func(std::declval<SettingsData&>()))
 	{
 		std::unique_lock lock(mutex);
+		save_required = true;
+		save_cv.notify_one();
 		return func(data);
 	}
 
 private:
 	bool load();
-	bool save();
+	bool save(const SettingsData& settings);
+	void run();
 
 	std::filesystem::path file_path;
 	mutable std::shared_mutex mutex;
+	std::condition_variable_any save_cv;
+	std::thread save_thread;
+	bool running = false;
+	bool save_required = false;
 
 	SettingsData data;
 };
