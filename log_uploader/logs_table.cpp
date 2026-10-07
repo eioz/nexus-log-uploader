@@ -167,10 +167,10 @@ void LogsTable::render()
 {
 	std::lock_guard lock(mutex);
 
-	update_entries();
-
 	auto settings = addon::settings->get();
 	auto& display_settings = settings.display.log_table;
+
+	update_entries(settings);
 
 	auto open = this->open;
 
@@ -463,11 +463,17 @@ void LogsTable::render()
 		in_combat_override = this->open;
 }
 
-void LogsTable::update_entries()
+void LogsTable::update_entries(const SettingsData& settings)
 {
 	auto logs = addon::session_manager->get_logs(viewed_session_id);
 
 	auto changed = logs.size() != entries.size() || !std::equal(logs.begin(), logs.end(), entries.begin(), [](const auto& log, const auto& entry) { return log == entry.ptr; });
+
+	// logs shown while wingman was turned off are looked up once it is on again
+	if (settings.wingman.enabled && !wingman_enabled)
+		changed = true;
+
+	wingman_enabled = settings.wingman.enabled;
 
 	if (changed)
 	{
@@ -478,6 +484,14 @@ void LogsTable::update_entries()
 		{
 			auto existing = std::find_if(entries.begin(), entries.end(), [&](const auto& entry) { return entry.ptr == log; });
 			updated_entries.push_back(existing != entries.end() ? *existing : LogTableEntry(log));
+
+			// missing links and incomplete statistics are looked up again once, for example after a restart
+			auto& data = updated_entries.back().data;
+			auto missing_link = (data.wingman_upload.status == UploadStatus::UPLOADED || data.wingman_upload.status == UploadStatus::SKIPPED) && data.wingman_upload.url.empty();
+			auto incomplete = data.parser_data.status == ParseStatus::PARSED && !data.wingman_statistics.complete;
+
+			if (settings.wingman.enabled && (missing_link || incomplete) && requested_statistics.insert(log).second)
+				addon::wingman_uploader->request_statistics(log);
 		}
 
 		entries = updated_entries;

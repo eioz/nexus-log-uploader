@@ -95,7 +95,9 @@ public:
 	std::map<std::string, int> dps_percentiles;     // by account, compared with the same profession
 	std::map<std::string, int> support_percentiles; // by account, only for players wingman counts as support
 
-	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, era, kill_percentile, median_duration_ms, best_duration_ms, best_group, personal_best_ms, ranks, dps_percentiles, support_percentiles)
+	bool complete = false; // the last update finished without an error
+
+	NLOHMANN_DEFINE_TYPE_INTRUSIVE_WITH_DEFAULT(WingmanStatistics, era, kill_percentile, median_duration_ms, best_duration_ms, best_group, personal_best_ms, ranks, dps_percentiles, support_percentiles, complete)
 };
 
 class Encounter

@@ -106,10 +106,22 @@ void WingmanUploader::run()
 	{
 		std::unique_lock upload_queue_lock(upload_queue_mutex);
 
-		upload_cv.wait(upload_queue_lock, [&]() { return !upload_queue.empty() || !statistics_queue.empty() || !initialized.load(); });
+		auto ready = [&]() { return !upload_queue.empty() || !statistics_queue.empty() || !initialized.load(); };
+
+		if (link_retries.empty())
+			upload_cv.wait(upload_queue_lock, ready);
+		else
+			upload_cv.wait_until(upload_queue_lock, link_retries.begin()->first, ready);
 
 		if (!initialized.load())
 			break;
+
+		// due link lookups run with the statistics
+		while (!link_retries.empty() && link_retries.begin()->first <= std::chrono::steady_clock::now())
+		{
+			statistics_queue.push(link_retries.begin()->second);
+			link_retries.erase(link_retries.begin());
+		}
 
 		if (!statistics_queue.empty())
 		{
@@ -121,6 +133,9 @@ void WingmanUploader::run()
 			update_statistics(log);
 			continue;
 		}
+
+		if (upload_queue.empty())
+			continue;
 
 		auto log = upload_queue.front();
 		upload_queue.pop();
@@ -208,13 +223,16 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 				addon::log("Failed to get the Wingman link for " + data.id + ". Error: " + e.what(), LOGLEVEL_WARNING);
 		}
 
+		if (url.empty())
+			retry_link(log);
+
 		std::unique_lock lock(log->mutex);
 
 		log->wingman_upload.url = url;
 		log->update_view();
 	}
 
-	// missing statistics are requested again with the next update, the first error stops this one
+	// the first error stops this update, the logs table requests incomplete statistics again
 	try
 	{
 		auto wingman_boss_id = get_boss_id(data);
@@ -330,9 +348,13 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 					statistics.support_percentiles[player.account] = *support_percentile;
 			}
 		}
+
+		statistics.complete = true;
 	}
 	catch (const std::exception& e)
 	{
+		statistics.complete = false;
+
 		if (initialized.load())
 			addon::log("Failed to get Wingman statistics for " + data.id + ". Error: " + e.what(), LOGLEVEL_WARNING);
 	}
@@ -341,6 +363,16 @@ void WingmanUploader::update_statistics(std::shared_ptr<Log> log)
 
 	log->wingman_statistics = statistics;
 	log->update_view();
+}
+
+// wingman can take a moment to add an upload, a missing link is looked up three more times, two minutes apart
+void WingmanUploader::retry_link(std::shared_ptr<Log> log)
+{
+	if (++link_failures[log] > 3)
+		return;
+
+	std::unique_lock upload_queue_lock(upload_queue_mutex);
+	link_retries.emplace(std::chrono::steady_clock::now() + std::chrono::minutes(2), log);
 }
 
 // wingman counts some encounters as another boss and splits ai into its phases

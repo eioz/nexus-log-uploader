@@ -105,8 +105,10 @@ private:
 	ImVec2 tooltip_position = ImVec2(0, 0);
 	ImVec2 tooltip_size = ImVec2(0, 0);
 	double tooltip_time = 0.0;
+	std::set<std::shared_ptr<Log>> requested_statistics;
+	bool wingman_enabled = false;
 
-	void update_entries();
+	void update_entries(const SettingsData& settings);
 	void draw_context_menu(const SettingsData& settings);
 	void draw_session_menu();
 	void draw_empty_session();
