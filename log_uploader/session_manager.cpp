@@ -435,6 +435,12 @@ void SessionManager::save()
 
 			// the reports of an archived session stay until its file no longer refers to them
 			kept_paths.push_back(sessions_directory / info.id / REPORTS_DIRECTORY);
+
+			// tried again with the next save, unless the session was deleted meanwhile
+			std::lock_guard lock(mutex);
+
+			if (sessions.contains(info.id))
+				changed_sessions.insert(info.id);
 		}
 	}
 
@@ -447,6 +453,9 @@ void SessionManager::save()
 		catch (const std::exception& e)
 		{
 			addon::log("Failed to save session index: " + std::string(e.what()), LOGLEVEL_WARNING);
+
+			std::lock_guard lock(mutex);
+			index_save_required = true;
 		}
 	}
 
