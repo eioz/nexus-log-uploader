@@ -7,6 +7,7 @@
     .\build.ps1 -Clean              # Clean build artifacts
     .\build.ps1 -Rebuild            # Full rebuild
     .\build.ps1 -Config Debug -Mock # Build + launch in mock
+    .\build.ps1 -Mock -NoLaunch     # Build + prepare the mock for a debugger
 #>
 [CmdletBinding()]
 param(
@@ -15,7 +16,8 @@ param(
 
     [switch]$Clean,
     [switch]$Rebuild,
-    [switch]$Mock
+    [switch]$Mock,
+    [switch]$NoLaunch
 )
 
 $ErrorActionPreference = "Stop"
@@ -79,6 +81,17 @@ if ($Mock) {
         exit 1
     }
 
-    Write-Host "Launching mock..." -ForegroundColor Green
-    & $MockExe $AddonDll
+    # Without an arcdps.ini the addon watches the real arcdps log folder, so the mock gets its own
+    $ArcdpsDirectory = Join-Path (Get-Location) "data\addons\arcdps"
+    $ArcdpsConfig = Join-Path $ArcdpsDirectory "arcdps.ini"
+    if (-not (Test-Path $ArcdpsConfig)) {
+        New-Item -ItemType Directory -Force (Join-Path $ArcdpsDirectory "arcdps.cbtlogs") | Out-Null
+        Set-Content $ArcdpsConfig "[session]`r`nboss_encounter_path=$ArcdpsDirectory" -Encoding Unicode
+        Write-Host "Created $ArcdpsConfig"
+    }
+
+    if (-not $NoLaunch) {
+        Write-Host "Launching mock..." -ForegroundColor Green
+        & $MockExe $AddonDll
+    }
 }

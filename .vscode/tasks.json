@@ -67,13 +67,15 @@
     },
     {
       "label": "Build Debug + Mock",
-      "dependsOn": [
-        "Build Debug x64",
-        "Build Mock Debug x64"
-      ],
-      "dependsOrder": "sequence",
+      "type": "shell",
+      "command": ".\\build.ps1 -Config Debug -Mock -NoLaunch",
       "group": "build",
-      "problemMatcher": []
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "clear": true
+      },
+      "problemMatcher": "$msCompile"
     },
     {
       "label": "Debug Mock",
