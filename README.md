@@ -1,21 +1,45 @@
 # Nexus Log Uploader
 
-[Nexus](https://github.com/RaidcoreGG/Nexus) addon to automatically parse new arcdps logs locally and optionally upload them to [dps.report](https://dps.report) or [Wingman](https://gw2wingman.nevermindcreations.de).
+[Nexus](https://github.com/RaidcoreGG/Nexus) addon for Guild Wars 2 that parses your new arcdps logs locally with Elite Insights and uploads them to [dps.report](https://dps.report) or [Wingman](https://gw2wingman.nevermindcreations.de) if you want.
+
+![Logs table](screenshots/table.png)
+
+## Installation
+
+Download `log_uploader.dll` from the [latest release](https://github.com/eioz/nexus-log-uploader/releases/latest) and put it in `<Guild Wars 2>\addons`. Nexus keeps it up to date. The addon installs Elite Insights itself.
 
 ## Features
 
-- **Sessions:** logs are grouped into sessions. A log more than two hours after the previous one starts a new session, and **Sessions > New session** in the context menu starts one with the next log. Earlier sessions can be opened from the same menu.
-- **Archiving:** archiving a session deletes its Elite Insights reports but keeps the summaries and links. A log can be parsed again as long as its arcdps file exists. Archived sessions can be unarchived or deleted. Your arcdps logs are never deleted.
-- **Encounter tooltip:** hover an encounter name to see the squad with boss DPS, cleave, CC and boons. The display options choose the boons and whether to show downs and deaths.
-- **Wingman statistics:** the tooltip compares a kill with the other kills of its patch on Wingman: its speed percentile, the median and fastest kill, and your personal best. Players with a Wingman rank show it. Once the log is on Wingman, the Wingman button opens its report and the tooltip adds each player's DPS percentile, plus the support percentile for supports.
+### Logs table
 
-## Screenshots
+New logs show up with their result and duration. The buttons open the Elite Insights report and upload to dps.report or Wingman, or open the log there once it is uploaded.
 
-![context-menu](screenshots/context-menu.png)
-![display-options](screenshots/display-options.png)
-![parser-options](screenshots/parser-options.png)
-![dps-report-options](screenshots/dps-report-options.png)
-![wingman-options](screenshots/wingman-options.png)
+Right-click for actions on the last, the selected or all logs, like copying the dps.report links as a list or as markdown links. The sessions and settings are in the same menu.
+
+![Context menu](screenshots/context-menu.png)
+
+### Encounter tooltip
+
+Hover an encounter to see the squad by subgroup with boss DPS, cleave, CC and boons.
+
+For bosses Wingman knows, the tooltip compares a kill with the other kills of its patch: how many kills it beat, the median and fastest kill, and your personal best. Players with a Wingman rank show it. Once the log is on Wingman, the tooltip also shows each player's DPS percentile, plus the support percentile for supports.
+
+![Encounter tooltip](screenshots/tooltip.png)
+
+### Sessions
+
+After the game starts, the first log begins a new session. **Resume last session** in the empty table continues the previous one instead, and **Sessions > New session** in the context menu starts a new one with the next log. Earlier sessions open from the same menu.
+
+Archiving a session removes its Elite Insights reports but keeps the summaries and links. Its logs can be parsed again as long as their arcdps files exist. Archived sessions can be unarchived or deleted. Your arcdps logs are never deleted.
+
+### Settings
+
+dps.report and Wingman can each upload new logs of the encounters you pick, optionally only kills, and dps.report can copy the link to the clipboard. The display options pick the columns and the tooltip boons, and can add downs and deaths to the tooltip.
+
+The settings are in the Nexus options and in the context menu.
+
+![Display options](screenshots/display-options.png)
+![dps.report options](screenshots/dps-report-options.png)
 
 ## Building
 
