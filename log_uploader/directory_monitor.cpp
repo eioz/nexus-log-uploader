@@ -1,6 +1,6 @@
 #include "directory_monitor.h"
-#include "log_manager.h"
 #include "addon.h"
+#include "log_manager.h"
 
 #include <ShlObj.h>
 #include <deque>
@@ -38,7 +38,6 @@ void add_log_file(const std::filesystem::path& file_path)
 		if (log_available)
 		{
 			addon::log("New evtc file detected: " + addon::to_utf8(file_path), LOGLEVEL_DEBUG);
-
 			addon::log_manager->add_log(file_path);
 		}
 		else

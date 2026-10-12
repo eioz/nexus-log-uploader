@@ -18,7 +18,8 @@
 #define CPR_PARAMETERS cpr::Timeout(std::chrono::seconds(30)), cpr::ProgressCallback([this](auto...) { return !cancelled.load(); })
 #define GITHUB_RELEASES_URL std::string("https://api.github.com/repos/baaron4/GW2-Elite-Insights-Parser/releases/")
 
-namespace {
+namespace
+{
 struct HandleGuard
 {
 	HANDLE handle = INVALID_HANDLE_VALUE;
@@ -238,7 +239,12 @@ ParserData EliteInsights::parse(const std::filesystem::path& evtc_file_path, con
 			if (json.contains("isLegendaryCM"))
 				lcm = json.at("isLegendaryCM").get<bool>();
 
-			data.encounter.difficulty = lcm ? EncounterDifficulty::LEGENDARY_CHALLENGE_MODE : cm ? EncounterDifficulty::CHALLENGE_MODE : EncounterDifficulty::NORMAL_MODE;
+			if (lcm)
+				data.encounter.difficulty = EncounterDifficulty::LEGENDARY_CHALLENGE_MODE;
+			else if (cm)
+				data.encounter.difficulty = EncounterDifficulty::CHALLENGE_MODE;
+			else
+				data.encounter.difficulty = EncounterDifficulty::NORMAL_MODE;
 
 			static const auto parse_time = [](const std::string& utc_time_str) -> std::chrono::system_clock::time_point {
 				std::istringstream ss(utc_time_str);
@@ -325,7 +331,7 @@ void EliteInsights::install()
 
 	if (!settings.auto_update && installed)
 	{
-		addon::log("Parser auto update disabled.", LOGLEVEL_DEBUG);
+		addon::log("Parser auto update disabled", LOGLEVEL_DEBUG);
 		this->installed.store(installed);
 		return;
 	}

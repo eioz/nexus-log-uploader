@@ -21,7 +21,10 @@
 #define QUICK_ACCESS_UI "LOG_UPLOADER"
 #define QUICK_ACCESS_TEXTURE "LOG_UPLOADER_ICON"
 
-static HMODULE addon_module = nullptr;
+namespace
+{
+HMODULE addon_module = nullptr;
+} // namespace
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID /*lpReserved*/)
 {
@@ -83,7 +86,7 @@ void load(AddonAPI_t* addon_api)
 	if (!std::filesystem::exists(addon::directory))
 		if (!std::filesystem::create_directory(addon::directory))
 		{
-			addon::log("Failed to create addon directory.", LOGLEVEL_CRITICAL);
+			addon::log("Failed to create addon directory", LOGLEVEL_CRITICAL);
 			return;
 		}
 

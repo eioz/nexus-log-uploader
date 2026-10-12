@@ -8,7 +8,17 @@ std::filesystem::path directory;
 AddonAPI_t* api = nullptr;
 Mumble::Data* mumble = nullptr;
 
-static std::mutex log_mutex;
+namespace
+{
+std::mutex log_mutex;
+
+std::filesystem::path get_log_config_path()
+{
+	if (api)
+		return std::filesystem::path(api->Paths_GetAddonDirectory("arcdps")) / "arcdps.ini";
+	return {};
+}
+} // namespace
 
 void log(const std::string& message, LogLevel level)
 {
@@ -20,13 +30,6 @@ void log(const std::string& message, LogLevel level)
 void log(const char* message, LogLevel level)
 {
 	log(std::string(message), level);
-}
-
-static std::filesystem::path get_log_config_path()
-{
-	if (api)
-		return std::filesystem::path(api->Paths_GetAddonDirectory("arcdps")) / "arcdps.ini";
-	return {};
 }
 
 std::filesystem::path get_log_directory()

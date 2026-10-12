@@ -151,7 +151,7 @@ DpsReportUpload DPSReportUploader::upload(std::filesystem::path evtc_file_path)
 
 	auto settings = addon::settings->get().dps_report;
 
-	if (!settings.user_token.empty()&& settings.user_token.length() == 32)
+	if (!settings.user_token.empty() && settings.user_token.length() == 32)
 		parameters.Add({ "userToken", settings.user_token });
 	if (settings.anonymize)
 		parameters.Add({ "anonymous", "true" });
