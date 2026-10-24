@@ -275,6 +275,9 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 
 	Spacing();
 
+	// a fixed size keeps the surrounding menu from moving while headers open and close
+	BeginChild("Encounters", ImVec2(0.f, GetFrameHeightWithSpacing() * 12.f), true, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+
 	for (const auto& category : EncounterCategories)
 	{
 		bool main_category_matches = false;
@@ -358,6 +361,8 @@ bool ImGui::EncounterSelector(const char* label, EncounterSelection* value)
 			Unindent();
 		}
 	}
+
+	EndChild();
 
 	state.expand_all = false;
 	state.collapse_all = false;
