@@ -7,11 +7,11 @@
 #include <string>
 #include <windows.h>
 
-#define ADDON_VERSION_MAJOR 1
-#define ADDON_VERSION_MINOR 2
+#define ADDON_VERSION_MAJOR 2
+#define ADDON_VERSION_MINOR 0
 #define ADDON_VERSION_BUILD 0
 #define ADDON_VERSION_REVISION 0
-#define ADDON_VERSION_STRING "1.2.0"
+#define ADDON_VERSION_STRING "2.0.0"
 
 #define ADDON_NAME "Log Uploader"
 #define ADDON_DIRECTORY "log-uploader"
