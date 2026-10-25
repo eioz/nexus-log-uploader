@@ -413,9 +413,6 @@ void LogsTable::render()
 
 						if (ImGui::IsItemHovered() && entry.data.parser_data.status == ParseStatus::PARSED)
 						{
-							if (tooltip_log != entry.ptr)
-								tooltip_position = ImGui::GetMousePos();
-
 							tooltip_log = entry.ptr;
 							tooltip_time = ImGui::GetTime();
 						}
@@ -895,12 +892,12 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 	auto screen_size = ImGui::GetIO().DisplaySize;
 	auto font_size = ImGui::GetFontSize();
 
-	// next to where the hover started and within the screen
-	auto position = tooltip_position + ImVec2(font_size, font_size);
-	position.x = std::clamp(position.x, 0.f, std::max(screen_size.x - tooltip_size.x, 0.f));
-	position.y = std::clamp(position.y, 0.f, std::max(screen_size.y - tooltip_size.y, 0.f));
+	// imgui places it next to the cursor while its log is hovered, then it stays in place so it can be reached
+	auto log_hovered = tooltip_time == ImGui::GetTime();
 
-	ImGui::SetNextWindowPos(position);
+	if (!log_hovered)
+		ImGui::SetNextWindowPos(tooltip_position);
+
 	ImGui::SetNextWindowSizeConstraints(ImVec2(0, 0), screen_size);
 
 	auto window_flags = ImGuiWindowFlags_Tooltip | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
@@ -1133,7 +1130,7 @@ void LogsTable::draw_tooltip(const SettingsData& settings)
 				ImGui::Dummy(ImVec2(table_width + ImGui::GetStyle().ScrollbarSize, 0));
 		}
 
-		tooltip_size = ImGui::GetWindowSize();
+		tooltip_position = ImGui::GetWindowPos();
 	}
 
 	ImGui::End();
