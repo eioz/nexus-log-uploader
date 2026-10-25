@@ -5,5 +5,10 @@
     "cpr",
     "nlohmann-json",
     "miniz"
-  ]
+  ],
+  "vcpkg-configuration": {
+    "overlay-triplets": [
+      "triplets"
+    ]
+  }
 }
